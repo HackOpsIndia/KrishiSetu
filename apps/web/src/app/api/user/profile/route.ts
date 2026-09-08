@@ -123,36 +123,52 @@ export async function PUT(req: NextRequest) {
 
     // Update Farmer Profile if applicable
     if (body.village || body.district || body.state) {
-      await prisma.farmerProfile.upsert({
-        where: { userId: existing.id },
-        create: {
-          userId: existing.id,
-          village: body.village || 'Pune Rural',
-          district: body.district || 'Pune',
-          state: body.state || 'Maharashtra',
-        },
-        update: {
-          village: body.village || undefined,
-          district: body.district || undefined,
-          state: body.state || undefined,
-        },
-      });
+      try {
+        await prisma.farmerProfile.upsert({
+          where: { userId: existing.id },
+          create: {
+            userId: existing.id,
+            village: body.village || 'Pune Rural',
+            district: body.district || 'Pune',
+            state: body.state || 'Maharashtra',
+          },
+          update: {
+            village: body.village || undefined,
+            district: body.district || undefined,
+            state: body.state || undefined,
+          },
+        });
+      } catch (fErr: any) {
+        console.warn('[User Profile PUT] Farmer profile upsert warning:', fErr?.message);
+      }
     }
 
     // Update Buyer Profile if applicable
     if (body.companyName || body.buyerType) {
-      await prisma.buyerProfile.upsert({
-        where: { userId: existing.id },
-        create: {
-          userId: existing.id,
-          companyName: body.companyName || `${updatedUser.name} Procurement`,
-          buyerType: (body.buyerType as any) || 'RETAIL_CHAIN',
-        },
-        update: {
-          companyName: body.companyName || undefined,
-          buyerType: (body.buyerType as any) || undefined,
-        },
-      });
+      try {
+        const rawType = (body.buyerType || '').toUpperCase();
+        let validBuyerType: 'TRADER' | 'PROCESSOR' | 'WHOLESALER' | 'RETAILER' | 'INSTITUTIONAL' | 'EXPORTER' = 'PROCESSOR';
+        if (rawType.includes('WHOLESALE')) validBuyerType = 'WHOLESALER';
+        else if (rawType.includes('RETAIL')) validBuyerType = 'RETAILER';
+        else if (rawType.includes('EXPORT')) validBuyerType = 'EXPORTER';
+        else if (rawType.includes('INSTITUT')) validBuyerType = 'INSTITUTIONAL';
+        else if (rawType.includes('TRADE')) validBuyerType = 'TRADER';
+
+        await prisma.buyerProfile.upsert({
+          where: { userId: existing.id },
+          create: {
+            userId: existing.id,
+            companyName: body.companyName || `${updatedUser.name} Procurement`,
+            buyerType: validBuyerType,
+          },
+          update: {
+            companyName: body.companyName || undefined,
+            buyerType: validBuyerType,
+          },
+        });
+      } catch (bErr: any) {
+        console.warn('[User Profile PUT] Buyer profile upsert warning:', bErr?.message);
+      }
     }
 
     // Reload with profiles
