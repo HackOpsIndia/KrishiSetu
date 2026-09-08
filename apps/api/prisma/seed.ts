@@ -27,7 +27,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding KrishiSetu demo data...\n');
 
-  // --- Clean existing data ---
+  await (prisma as any).opportunityRecord.deleteMany();
   await prisma.auditEvent.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.logisticsBooking.deleteMany();
@@ -298,7 +298,137 @@ async function main() {
       status: 'READY',
     },
   });
-  console.log('  ✓ Demo lot created');
+  // --- Opportunity Records ---
+  const canonicalOpportunities = [
+    {
+      id: 'freshmart',
+      rank: 1,
+      name: 'FreshMart Foods',
+      channelType: 'DIRECT_BUYER',
+      buyerType: 'Corporate Processor',
+      location: 'Chakan Industrial Zone, Pune',
+      distanceKm: 42,
+      providesPickup: true,
+      grossPricePaise: 296000,
+      nrpPaise: 292500,
+      totalRealizedPaise: 292500 * 18,
+      totalDeductionsPaise: 3500,
+      netMarginOverBaselinePaise: 292500 - 262200,
+      trustScore: 0.90,
+      paymentReliability: 0.95,
+      verificationLevel: 'PLATFORM_VERIFIED',
+      paymentTerm: 'Direct Bank Settlement (T+1 on Weighment)',
+      deductions: {
+        transportPaise: 0,
+        loadingPaise: 2000,
+        weighingPaise: 0,
+        mandiFeePaise: 0,
+        commissionPaise: 0,
+        transitLossPaise: 1500,
+      },
+      recommendationReason:
+        'Rank #1 Natural Choice: Direct farmgate pickup eliminates ₹22/km transport and APMC 5% fees. Delivers the highest net in-hand realization with platform-verified settlement.',
+      isEligible: true,
+    },
+    {
+      id: 'pune-apmc',
+      rank: 2,
+      name: 'Pune APMC (Gultekdi)',
+      channelType: 'MANDI_APMC',
+      location: 'Gultekdi Market Yard, Pune',
+      distanceKm: 35,
+      providesPickup: false,
+      grossPricePaise: 310000,
+      nrpPaise: 278700,
+      totalRealizedPaise: 278700 * 18,
+      totalDeductionsPaise: 31300,
+      netMarginOverBaselinePaise: 278700 - 262200,
+      trustScore: 0.85,
+      paymentReliability: 0.88,
+      verificationLevel: 'APMC_REGULATED',
+      paymentTerm: 'Traditional Commission Agent (3-7 Day Credit)',
+      deductions: {
+        transportPaise: 7700,
+        loadingPaise: 1500,
+        weighingPaise: 500,
+        mandiFeePaise: 3100,
+        commissionPaise: 9300,
+        transitLossPaise: 9200,
+      },
+      recommendationReason:
+        'High gross price (₹3,100/qtl), but net realization drops to ₹2,787/qtl due to transit shrinkage, haulage, and market cess.',
+      isEligible: true,
+    },
+    {
+      id: 'pune-veggie',
+      rank: 3,
+      name: 'Pune Veggie Hub',
+      channelType: 'DIRECT_BUYER',
+      buyerType: 'Semi-Wholesaler',
+      location: 'Hadapsar, Pune',
+      distanceKm: 28,
+      providesPickup: true,
+      grossPricePaise: 280000,
+      nrpPaise: 274600,
+      totalRealizedPaise: 274600 * 18,
+      totalDeductionsPaise: 5400,
+      netMarginOverBaselinePaise: 274600 - 262200,
+      trustScore: 0.82,
+      paymentReliability: 0.85,
+      verificationLevel: 'DOCUMENTS_SUBMITTED',
+      paymentTerm: 'Direct Bank Transfer (T+2)',
+      deductions: {
+        transportPaise: 0,
+        loadingPaise: 2500,
+        weighingPaise: 0,
+        mandiFeePaise: 0,
+        commissionPaise: 0,
+        transitLossPaise: 2900,
+      },
+      recommendationReason:
+        'Convenient local pickup with prompt payment. Slightly lower gross offer than FreshMart.',
+      isEligible: true,
+    },
+    {
+      id: 'agrifresh',
+      rank: 4,
+      name: 'AgriFresh Exports Ltd.',
+      channelType: 'DIRECT_BUYER',
+      buyerType: 'Institutional Exporter',
+      location: 'Nashik Cargo Hub',
+      distanceKm: 165,
+      providesPickup: false,
+      grossPricePaise: 320000,
+      nrpPaise: 295000,
+      totalRealizedPaise: 0,
+      totalDeductionsPaise: 25000,
+      netMarginOverBaselinePaise: 32800,
+      trustScore: 0.92,
+      paymentReliability: 0.96,
+      verificationLevel: 'PLATFORM_VERIFIED',
+      paymentTerm: 'Direct Settlement (T+1 on Delivery)',
+      deductions: {
+        transportPaise: 16000,
+        loadingPaise: 3000,
+        weighingPaise: 0,
+        mandiFeePaise: 0,
+        commissionPaise: 0,
+        transitLossPaise: 6000,
+      },
+      recommendationReason:
+        'Highest gross price in Maharashtra (₹3,200/qtl). Ineligible for individual harvest lot (< 50 Qtl). Unlocks with FPO collective pooling.',
+      isEligible: false,
+      ineligibilityReason:
+        'Minimum lot threshold is 50 Quintals. Your harvest lot is 18 Quintals. Pool with local cluster farmers (Suresh & Meena) to unlock this institutional contract.',
+    },
+  ];
+
+  for (const opp of canonicalOpportunities) {
+    await (prisma as any).opportunityRecord.create({
+      data: opp,
+    });
+  }
+  console.log('  ✓ Opportunity records seeded');
 
   // --- Audit ---
   await prisma.auditEvent.create({

@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OpportunityCard, OpportunityItem } from '../components/OpportunityCard';
 import { NRPBreakdownModal } from '../components/NRPBreakdownModal';
 import { AggregationModal } from '../components/AggregationModal';
 import { NegotiationModal } from '../components/NegotiationModal';
+import { OpportunityCrudModal } from '../components/OpportunityCrudModal';
 import { ImpactCard } from '../components/ImpactCard';
 import { ScenarioSimulator } from '../components/ScenarioSimulator';
 import { MotionHero } from '../components/MotionHero';
 import { ProductMosaic } from '../components/ProductMosaic';
 import { LiquidGlassFooter } from '../components/LiquidGlassFooter';
+import { api } from '../lib/api';
 import { 
   SproutIcon, 
   UsersIcon, 
@@ -20,133 +22,13 @@ import {
   ArrowRightIcon,
   TruckIcon
 } from '../components/icons';
-
-// Baseline opportunities aligned with canonical single source of truth
-const BASE_OPPORTUNITIES: OpportunityItem[] = [
-  {
-    id: 'freshmart',
-    rank: 1,
-    name: 'FreshMart Foods',
-    channelType: 'DIRECT_BUYER',
-    buyerType: 'Corporate Processor',
-    location: 'Chakan Industrial Zone, Pune',
-    distanceKm: 42,
-    providesPickup: true,
-    grossPricePaise: 296000, // ₹2,960/qtl
-    nrpPaise: 292500, // ₹2,925/qtl (calculated after ₹20 loading + 0.5% transit loss)
-    totalRealizedPaise: 292500 * 18, // ₹52,650
-    totalDeductionsPaise: 3500, // ₹35/qtl
-    netMarginOverBaselinePaise: 292500 - 262200, // +₹303/qtl over baseline
-    trustScore: 0.90,
-    paymentReliability: 0.95,
-    verificationLevel: 'PLATFORM_VERIFIED',
-    paymentTerm: 'Direct Bank Settlement (T+1 on Weighment)',
-    deductions: {
-      transportPaise: 0,
-      loadingPaise: 2000, // ₹20/qtl
-      weighingPaise: 0,
-      mandiFeePaise: 0,
-      commissionPaise: 0,
-      transitLossPaise: 1500, // 0.5% of 2960 = ~₹15/qtl
-    },
-    recommendationReason:
-      'Rank #1 Natural Choice: Direct farmgate pickup eliminates ₹22/km transport and APMC 5% fees. Delivers the highest net in-hand realization with platform-verified settlement.',
-    isEligible: true,
-  },
-  {
-    id: 'pune-apmc',
-    rank: 2,
-    name: 'Pune APMC (Gultekdi)',
-    channelType: 'MANDI_APMC',
-    location: 'Gultekdi Market Yard, Pune',
-    distanceKm: 35,
-    providesPickup: false,
-    grossPricePaise: 310000, // ₹3,100/qtl gross headline
-    nrpPaise: 278700, // ₹2,787/qtl net in-hand
-    totalRealizedPaise: 278700 * 18, // ₹50,166
-    totalDeductionsPaise: 31300, // ₹313/qtl physical deductions
-    netMarginOverBaselinePaise: 278700 - 262200, // +₹165/qtl over baseline
-    trustScore: 0.85,
-    paymentReliability: 0.88,
-    verificationLevel: 'APMC_REGULATED',
-    paymentTerm: 'Traditional Commission Agent (3-7 Day Credit)',
-    deductions: {
-      transportPaise: 7700, // ₹77/qtl
-      loadingPaise: 1500,
-      weighingPaise: 500,
-      mandiFeePaise: 3100, // 1.05% mandi fee
-      commissionPaise: 9300, // Unofficial commission
-      transitLossPaise: 9200, // 3.0% physical haulage loss
-    },
-    recommendationReason:
-      'High gross price (₹3,100/qtl), but net realization drops to ₹2,787/qtl due to transit shrinkage, haulage, and market cess.',
-    isEligible: true,
-  },
-  {
-    id: 'pune-veggie',
-    rank: 3,
-    name: 'Pune Veggie Hub',
-    channelType: 'DIRECT_BUYER',
-    buyerType: 'Semi-Wholesaler',
-    location: 'Hadapsar, Pune',
-    distanceKm: 28,
-    providesPickup: true,
-    grossPricePaise: 280000, // ₹2,800/qtl
-    nrpPaise: 274600, // ₹2,746/qtl
-    totalRealizedPaise: 274600 * 18, // ₹49,428
-    totalDeductionsPaise: 5400,
-    netMarginOverBaselinePaise: 274600 - 262200,
-    trustScore: 0.82,
-    paymentReliability: 0.85,
-    verificationLevel: 'DOCUMENTS_SUBMITTED',
-    paymentTerm: 'Direct Bank Transfer (T+2)',
-    deductions: {
-      transportPaise: 0,
-      loadingPaise: 2500,
-      weighingPaise: 0,
-      mandiFeePaise: 0,
-      commissionPaise: 0,
-      transitLossPaise: 2900,
-    },
-    recommendationReason:
-      'Convenient local pickup with prompt payment. Slightly lower gross offer than FreshMart.',
-    isEligible: true,
-  },
-  {
-    id: 'agrifresh',
-    rank: 4,
-    name: 'AgriFresh Exports Ltd.',
-    channelType: 'DIRECT_BUYER',
-    buyerType: 'Institutional Exporter',
-    location: 'Nashik Cargo Hub',
-    distanceKm: 165,
-    providesPickup: false,
-    grossPricePaise: 320000, // ₹3,200/qtl highest market offer!
-    nrpPaise: 295000,
-    totalRealizedPaise: 0,
-    totalDeductionsPaise: 25000,
-    netMarginOverBaselinePaise: 32800,
-    trustScore: 0.92,
-    paymentReliability: 0.96,
-    verificationLevel: 'PLATFORM_VERIFIED',
-    paymentTerm: 'Direct Settlement (T+1 on Delivery)',
-    deductions: {
-      transportPaise: 16000,
-      loadingPaise: 3000,
-      weighingPaise: 0,
-      mandiFeePaise: 0,
-      commissionPaise: 0,
-      transitLossPaise: 6000,
-    },
-    recommendationReason:
-      'Highest gross price in Maharashtra (₹3,200/qtl). Ineligible for individual harvest lot (< 50 Qtl). Unlocks with FPO collective pooling.',
-    isEligible: false,
-    ineligibilityReason:
-      'Minimum lot threshold is 50 Quintals. Your harvest lot is 18 Quintals. Pool with local cluster farmers (Suresh & Meena) to unlock this institutional contract.',
-  },
-];
+import { Database, RefreshCw, Plus } from 'lucide-react';
 
 export default function HomePage() {
+  const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
+  const [isLoadingOpps, setIsLoadingOpps] = useState<boolean>(true);
+  const [showDbCrudModal, setShowDbCrudModal] = useState<boolean>(false);
+
   const [quantityQtl, setQuantityQtl] = useState<number>(18);
   const [transportRate, setTransportRate] = useState<number>(22);
   const [fuelMultiplier, setFuelMultiplier] = useState<number>(1.3);
@@ -158,7 +40,24 @@ export default function HomePage() {
   const [negotiatingOpportunity, setNegotiatingOpportunity] = useState<OpportunityItem | null>(null);
   const [showAggregationModal, setShowAggregationModal] = useState(false);
 
-  const opportunities = BASE_OPPORTUNITIES;
+  // Fetch opportunities dynamically from database API
+  const loadOpportunities = async () => {
+    try {
+      setIsLoadingOpps(true);
+      const data = await api.getOpportunities();
+      if (Array.isArray(data) && data.length > 0) {
+        setOpportunities(data);
+      }
+    } catch (err) {
+      console.warn('[HomePage] Failed to fetch opportunities from DB API:', err);
+    } finally {
+      setIsLoadingOpps(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOpportunities();
+  }, []);
 
   const handleResetDemo = () => {
     setIsResetting(true);
@@ -348,20 +247,62 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Cards List */}
-          <div className="grid grid-cols-1 gap-6">
-            {opportunities.map((opp) => (
-              <OpportunityCard
-                key={opp.id}
-                opportunity={opp}
-                quantityQtl={quantityQtl}
-                isTopRanked={opp.rank === 1}
-                onOpenBreakdown={(item) => setInspectingOpportunity(item)}
-                onOpenNegotiate={(item) => setNegotiatingOpportunity(item)}
-                onOpenAggregation={() => setShowAggregationModal(true)}
-              />
-            ))}
+          {/* Database CRUD & Management Toolbar */}
+          <div className="flex items-center justify-between flex-wrap gap-3 bg-white/90 backdrop-blur-xs p-4 rounded-2xl border border-neutral-200 shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-neutral-800">
+                Database Engine ({opportunities.length} active opportunities)
+              </span>
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
+                Live REST API
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={loadOpportunities}
+                disabled={isLoadingOpps}
+                className="inline-flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+                title="Refresh from Database"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOpps ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDbCrudModal(true)}
+                className="inline-flex items-center gap-1.5 bg-[#ef4d23] hover:bg-[#d83f18] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span>Manage Database (CRUD)</span>
+              </button>
+            </div>
           </div>
+
+          {/* Cards List */}
+          {isLoadingOpps && opportunities.length === 0 ? (
+            <div className="py-12 text-center text-xs text-neutral-500 flex flex-col items-center gap-3 bg-white rounded-3xl border border-neutral-200">
+              <RefreshCw className="w-6 h-6 animate-spin text-[#ef4d23]" />
+              <span>Fetching opportunities directly from database...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {opportunities.map((opp) => (
+                <OpportunityCard
+                  key={opp.id}
+                  opportunity={opp}
+                  quantityQtl={quantityQtl}
+                  isTopRanked={opp.rank === 1}
+                  onOpenBreakdown={(item) => setInspectingOpportunity(item)}
+                  onOpenNegotiate={(item) => setNegotiatingOpportunity(item)}
+                  onOpenAggregation={() => setShowAggregationModal(true)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -423,6 +364,14 @@ export default function HomePage() {
           }}
         />
       )}
+
+      {/* Live Database CRUD Modal */}
+      <OpportunityCrudModal
+        isOpen={showDbCrudModal}
+        onClose={() => setShowDbCrudModal(false)}
+        opportunities={opportunities}
+        onRefresh={loadOpportunities}
+      />
     </div>
   );
 }

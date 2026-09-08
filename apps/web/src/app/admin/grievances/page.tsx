@@ -37,49 +37,7 @@ export default function AdminGrievancesPage() {
   const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<GrievanceTicket | null>(null);
-
-  const [tickets, setTickets] = useState<GrievanceTicket[]>([
-    {
-      id: 'GRV-2026-042',
-      raisedBy: 'Farmer',
-      farmerName: 'Anand Shinde',
-      buyerName: 'Metro Cash & Carry',
-      category: 'WEIGHT_DISCREPANCY',
-      title: 'Discrepancy between farm tare (45 Qtl) and buyer intake (43.2 Qtl)',
-      lotId: 'LOT-ONION-9921',
-      disputedAmount: 3564.00,
-      status: 'UNDER_REVIEW',
-      createdAt: 'Today, 08:15 AM',
-      description: 'The buyer gate weighbridge registered 43.2 Qtl while the village electronic weighbridge receipt verified 45.0 Qtl before loading.',
-    },
-    {
-      id: 'GRV-2026-039',
-      raisedBy: 'Farmer',
-      farmerName: 'Kailash Jadhav',
-      buyerName: 'Vashi Fresh Wholesale',
-      category: 'QUALITY_DOWNGRADE',
-      title: 'Buyer downgraded Grade A Tomato to Grade B citing minor blemishes',
-      lotId: 'LOT-TOMATO-8840',
-      disputedAmount: 8200.00,
-      status: 'OPEN',
-      createdAt: 'Yesterday, 03:40 PM',
-      description: 'Buyer arbitrarily deducted ₹250/qtl upon arrival. AI sorting photo scan verified 92% uniform grade.',
-    },
-    {
-      id: 'GRV-2026-031',
-      raisedBy: 'Buyer',
-      farmerName: 'Dnyaneshwar More',
-      buyerName: 'Pune Veggie Hub',
-      category: 'LOGISTICS_DAMAGE',
-      title: 'Crate damage during unpaved transit',
-      lotId: 'LOT-TOMATO-7712',
-      disputedAmount: 4100.00,
-      status: 'RESOLVED',
-      createdAt: '05 Sep 2026',
-      description: '10 crates damaged due to vehicle suspension failure. Transporter insurance claimed.',
-      resolutionNote: 'Settled via KrishiSetu Transit Micro-Insurance pool. Full payout issued to farmer.',
-    },
-  ]);
+  const [tickets, setTickets] = useState<GrievanceTicket[]>([]);
 
   const filteredTickets = tickets.filter((t) => {
     if (filter !== 'ALL' && t.status !== filter) return false;
@@ -176,19 +134,18 @@ export default function AdminGrievancesPage() {
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                  filter === tab
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${filter === tab
                     ? 'bg-[#0b0f1a] text-white'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 {tab === 'ALL'
                   ? 'All Grievances'
                   : tab === 'OPEN'
-                  ? 'Action Required'
-                  : tab === 'UNDER_REVIEW'
-                  ? 'Under Review'
-                  : 'Resolved'}
+                    ? 'Action Required'
+                    : tab === 'UNDER_REVIEW'
+                      ? 'Under Review'
+                      : 'Resolved'}
               </button>
             ))}
           </div>
@@ -207,13 +164,12 @@ export default function AdminGrievancesPage() {
                     {ticket.id}
                   </span>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      ticket.status === 'RESOLVED'
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ticket.status === 'RESOLVED'
                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                         : ticket.status === 'UNDER_REVIEW'
-                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                        : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-rose-50 text-rose-800 border border-rose-200'
+                      }`}
                   >
                     {ticket.status.replace('_', ' ')}
                   </span>

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '../../../components/navigation/AppShell';
+import { api } from '../../../lib/api';
 import {
   BarChart3,
   CheckCircle2,
@@ -14,91 +15,46 @@ import {
 
 export default function AdminMarketsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [marketFeeds, setMarketFeeds] = useState<any[]>([]);
 
-  const marketFeeds = [
-    {
-      id: 'feed-pune-apmc',
-      marketName: 'Pune APMC (Gultekdi)',
-      district: 'Pune',
-      commodity: 'Tomato Hybrid Grade A',
-      modalPrice: 3100,
-      minPrice: 2800,
-      maxPrice: 3300,
-      dailyArrivalsQtl: 450,
-      source: 'Agmarknet API Mirror',
-      dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-      lastUpdated: '1 hour ago',
-      isStale: false,
-      confidenceScore: 95,
-    },
-    {
-      id: 'feed-talegaon',
-      marketName: 'Talegaon Dabhade Mandi',
-      district: 'Pune',
-      commodity: 'Tomato Hybrid Grade A',
-      modalPrice: 2900,
-      minPrice: 2700,
-      maxPrice: 3050,
-      dailyArrivalsQtl: 180,
-      source: 'Maharashtra MSAMB Mandi Feed',
-      dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-      lastUpdated: '3 hours ago',
-      isStale: false,
-      confidenceScore: 92,
-    },
-    {
-      id: 'feed-pimpri',
-      marketName: 'Pimpri Sub-Yard',
-      district: 'Pune',
-      commodity: 'Tomato Hybrid Grade A',
-      modalPrice: 2950,
-      minPrice: 2700,
-      maxPrice: 3200,
-      dailyArrivalsQtl: 280,
-      source: 'State Agricultural Board',
-      dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-      lastUpdated: '2 hours ago',
-      isStale: false,
-      confidenceScore: 90,
-    },
-    {
-      id: 'feed-nashik',
-      marketName: 'Nashik Cargo Hub',
-      district: 'Nashik',
-      commodity: 'Tomato Hybrid Grade A',
-      modalPrice: 3200,
-      minPrice: 3000,
-      maxPrice: 3400,
-      dailyArrivalsQtl: 650,
-      source: 'Direct Exporter Terminal Feed',
-      dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-      lastUpdated: '45 mins ago',
-      isStale: false,
-      confidenceScore: 98,
-    },
-    {
-      id: 'feed-khed',
-      marketName: 'Khed APMC Yard',
-      district: 'Pune',
-      commodity: 'Onion (Nashik Red / Garwa)',
-      modalPrice: 2500,
-      minPrice: 2300,
-      maxPrice: 2700,
-      dailyArrivalsQtl: 820,
-      source: 'Agmarknet API Mirror',
-      dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-      lastUpdated: '5 hours ago',
-      isStale: false,
-      confidenceScore: 88,
-    },
-  ];
+  const loadFeeds = async () => {
+    try {
+      const opps = await api.getOpportunities();
+      if (Array.isArray(opps) && opps.length > 0) {
+        setMarketFeeds(
+          opps.map((o) => ({
+            id: `feed-${o.id}`,
+            marketName: o.name,
+            district: o.location.split(',')[1]?.trim() || 'Pune',
+            commodity: 'Tomato Hybrid Grade A',
+            modalPrice: Math.round(o.grossPricePaise / 100),
+            minPrice: Math.round((o.grossPricePaise / 100) * 0.92),
+            maxPrice: Math.round((o.grossPricePaise / 100) * 1.08),
+            dailyArrivalsQtl: o.channelType === 'MANDI_APMC' ? 450 : 280,
+            source: o.channelType === 'MANDI_APMC' ? 'Agmarknet API Mirror' : 'Direct Processor Feed',
+            dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
+            lastUpdated: '1 hour ago',
+            isStale: false,
+            confidenceScore: Math.round((o.trustScore || 0.9) * 100),
+          }))
+        );
+      } else {
+        setMarketFeeds([]);
+      }
+    } catch {}
+  };
 
-  const handleRefresh = () => {
+  useEffect(() => {
+    loadFeeds();
+  }, []);
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
+    await loadFeeds();
     setTimeout(() => {
       setIsRefreshing(false);
       alert('Market feeds refreshed from Agmarknet API mirror!');
-    }, 600);
+    }, 400);
   };
 
   return (

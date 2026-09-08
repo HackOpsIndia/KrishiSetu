@@ -17,16 +17,10 @@ dist/
 .turbo/
 *.tsbuildinfo
 
-# Environment variables & secrets (Strictly ignored)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-apps/api/.env
-apps/web/.env
-apps/web/.env.local
-*.env
+.env*
+*.env*
+apps/api/.env*
+apps/web/.env*
 
 # Keep environment example files
 !.env.example

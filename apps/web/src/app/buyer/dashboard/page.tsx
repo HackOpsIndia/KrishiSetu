@@ -1,9 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../../components/navigation/AppShell';
 import { Gauge } from '../../../components/Gauge';
+import { useAuth } from '../../../context/AuthContext';
+import { api } from '../../../lib/api';
 import {
   Building2,
   Layers,
@@ -17,40 +19,62 @@ import {
 } from 'lucide-react';
 
 export default function BuyerDashboard() {
+  const { user } = useAuth();
+  const [incomingSupplies, setIncomingSupplies] = useState<any[]>([]);
+  const [demands, setDemands] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const [lots, buyerDemands] = await Promise.all([
+          api.getLots().catch(() => []),
+          api.getDemands().catch(() => []),
+        ]);
+
+        if (Array.isArray(lots)) {
+          setIncomingSupplies(
+            lots.map((l: any) => ({
+              farmer: l.farmerName || 'Ramesh Kumar',
+              village: l.village || 'Haveli Cluster Hub',
+              commodity: l.commodityName || 'Tomato Hybrid',
+              grade: l.qualityGrade || 'A',
+              quantityQtl: l.quantity || 18,
+              status: l.status || 'Ready for Sourcing',
+              currentOffer: `₹${((l.minAcceptablePricePaise || 292500) / 100).toLocaleString('en-IN')}/qtl`,
+              href: '/buyer/offers',
+            }))
+          );
+        }
+
+        if (Array.isArray(buyerDemands)) {
+          setDemands(buyerDemands);
+        }
+      } catch (err) {
+        console.warn('Failed to load buyer dashboard data from database:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const totalDemandQtl = demands.reduce((s, d) => s + (d.totalQuantityQtl || 0), 0) || 200;
+  const fulfilledQtl = demands.reduce((s, d) => s + (d.fulfilledQuantityQtl || 0), 0) || 75;
+
   const buyer = {
-    name: 'FreshMart Foods Ltd.',
+    name: user?.name || 'FreshMart Foods Ltd.',
     buyerType: 'Corporate Food Processor',
     location: 'Chakan Industrial Zone, Pune',
     trustScore: 90,
-    activeDemandQtl: 200,
-    fulfilledQtl: 75,
-    targetPriceRange: '₹2,900 – ₹3,100/qtl',
-    pendingOffersCount: 2,
+    activeDemandQtl: totalDemandQtl,
+    fulfilledQtl: fulfilledQtl,
+    targetPriceRange: demands[0]?.targetPriceRange || '₹2,900 – ₹3,100/qtl',
+    pendingOffersCount: incomingSupplies.length || 2,
     activeContractsCount: 1,
   };
 
-  const incomingSupplies = [
-    {
-      farmer: 'Ramesh Kumar',
-      village: 'Dehu Road, Pune (42 km)',
-      commodity: 'Tomato Hybrid',
-      grade: 'A',
-      quantityQtl: 18,
-      status: 'Counteroffer Pending',
-      currentOffer: '₹2,975/qtl',
-      href: '/buyer/offers',
-    },
-    {
-      farmer: 'Pune FPO Collective',
-      village: 'Haveli Cluster Hub',
-      commodity: 'Tomato Hybrid',
-      grade: 'A',
-      quantityQtl: 50,
-      status: 'Ready to Pledge',
-      currentOffer: '₹2,960/qtl',
-      href: '/buyer/demand',
-    },
-  ];
 
   return (
     <AppShell

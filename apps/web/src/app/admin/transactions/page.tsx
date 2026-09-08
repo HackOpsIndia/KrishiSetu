@@ -1,22 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '../../../components/navigation/AppShell';
+import { api } from '../../../lib/api';
 import {
   ShieldCheck,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
   Search,
   Filter,
-  ArrowUpRight,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
+  FileText,
   Lock,
-  Download,
-  Building2,
-  Scale,
+  ArrowRight,
+  TrendingUp,
   DollarSign,
-  FileCheck,
+  Scale,
+  RefreshCw,
+  X,
+  Download,
   Eye,
 } from 'lucide-react';
 import { formatCurrency, formatQuintal } from '../../../lib/format';
@@ -30,7 +32,7 @@ interface TransactionAudit {
   quantityQtl: number;
   ratePerQtl: number;
   totalAmount: number;
-  escrowStatus: 'ESCROW_LOCKED' | 'SETTLED' | 'IN_TRANSIT' | 'DISPUTED';
+  escrowStatus: 'ESCROW_LOCKED' | 'SETTLED' | 'DISPUTED';
   settlementTime: string;
   weighbridgeMatch: boolean;
   date: string;
@@ -40,80 +42,34 @@ export default function AdminTransactionsPage() {
   const [filter, setFilter] = useState<'ALL' | 'ESCROW_LOCKED' | 'SETTLED' | 'DISPUTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<TransactionAudit | null>(null);
+  const [transactions, setTransactions] = useState<TransactionAudit[]>([]);
 
-  // Canonical transaction platform ledger
-  const transactions: TransactionAudit[] = [
-    {
-      id: 'TX-2026-8819',
-      txHash: '0x8f2d...c34b',
-      farmer: 'Ramesh Kumar',
-      buyer: 'FreshMart Foods Ltd.',
-      commodity: 'Tomato (Hybrid Grade A)',
-      quantityQtl: 18,
-      ratePerQtl: 2925.20,
-      totalAmount: 52653.60,
-      escrowStatus: 'ESCROW_LOCKED',
-      settlementTime: 'Est. 2h post-delivery',
-      weighbridgeMatch: true,
-      date: 'Today, 07:30 AM',
-    },
-    {
-      id: 'TX-2026-8814',
-      txHash: '0x4a1e...911f',
-      farmer: 'Suresh Patil',
-      buyer: 'Pune Veggie Hub',
-      commodity: 'Tomato (Hybrid Grade A)',
-      quantityQtl: 20,
-      ratePerQtl: 2815.75,
-      totalAmount: 56315.00,
-      escrowStatus: 'SETTLED',
-      settlementTime: '1.4 hours',
-      weighbridgeMatch: true,
-      date: 'Yesterday, 04:15 PM',
-    },
-    {
-      id: 'TX-2026-8809',
-      txHash: '0x3c99...e27a',
-      farmer: 'Junnar Farmer Producer Co. (FPO Pool)',
-      buyer: 'AgriFresh Exports Ltd.',
-      commodity: 'Tomato (Export Grade A)',
-      quantityQtl: 68,
-      ratePerQtl: 3080.00,
-      totalAmount: 209440.00,
-      escrowStatus: 'ESCROW_LOCKED',
-      settlementTime: 'In Transit to Mumbai Port',
-      weighbridgeMatch: true,
-      date: 'Yesterday, 11:20 AM',
-    },
-    {
-      id: 'TX-2026-8795',
-      txHash: '0x1b77...0f44',
-      farmer: 'Meena Deshmukh',
-      buyer: 'RK Traders',
-      commodity: 'Tomato (Local Variety)',
-      quantityQtl: 30,
-      ratePerQtl: 2766.00,
-      totalAmount: 82980.00,
-      escrowStatus: 'SETTLED',
-      settlementTime: '2.1 hours',
-      weighbridgeMatch: true,
-      date: '06 Sep 2026',
-    },
-    {
-      id: 'TX-2026-8742',
-      txHash: '0x992b...fa18',
-      farmer: 'Anand Shinde',
-      buyer: 'Metro Cash & Carry',
-      commodity: 'Onion (Red Nashik)',
-      quantityQtl: 45,
-      ratePerQtl: 1980.00,
-      totalAmount: 89100.00,
-      escrowStatus: 'DISPUTED',
-      settlementTime: 'Weight discrepancy (43.2 vs 45 Qtl)',
-      weighbridgeMatch: false,
-      date: '05 Sep 2026',
-    },
-  ];
+  useEffect(() => {
+    async function loadTxs() {
+      try {
+        const txs = await api.getTransactions();
+        if (Array.isArray(txs) && txs.length > 0) {
+          setTransactions(
+            txs.map((t: any) => ({
+              id: t.id,
+              txHash: t.contractHash || '0x8f2d...c34b',
+              farmer: t.farmerName || 'Ramesh Kumar',
+              buyer: t.buyerName || 'FreshMart Foods Ltd.',
+              commodity: t.commodityName || 'Tomato Hybrid',
+              quantityQtl: t.quantity || 18,
+              ratePerQtl: (t.agreedPricePaise || 292500) / 100,
+              totalAmount: (t.totalAmountPaise || 5265000) / 100,
+              escrowStatus: t.escrowStatus || 'ESCROW_LOCKED',
+              settlementTime: 'T+1 Bank Settlement',
+              weighbridgeMatch: true,
+              date: 'Today',
+            }))
+          );
+        }
+      } catch {}
+    }
+    loadTxs();
+  }, []);
 
   const filtered = transactions.filter((t) => {
     if (filter !== 'ALL' && t.escrowStatus !== filter) return false;
@@ -210,19 +166,18 @@ export default function AdminTransactionsPage() {
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                  filter === tab
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${filter === tab
                     ? 'bg-[#0b0f1a] text-white'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 {tab === 'ALL'
                   ? 'All Transactions'
                   : tab === 'ESCROW_LOCKED'
-                  ? 'Escrow Locked'
-                  : tab === 'SETTLED'
-                  ? 'Settled'
-                  : 'Disputed'}
+                    ? 'Escrow Locked'
+                    : tab === 'SETTLED'
+                      ? 'Settled'
+                      : 'Disputed'}
               </button>
             ))}
           </div>
@@ -285,13 +240,12 @@ export default function AdminTransactionsPage() {
 
                     <td className="px-5 py-4 text-center">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          tx.escrowStatus === 'SETTLED'
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${tx.escrowStatus === 'SETTLED'
                             ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                             : tx.escrowStatus === 'ESCROW_LOCKED'
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200'
-                        }`}
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              : 'bg-rose-50 text-rose-800 border border-rose-200'
+                          }`}
                       >
                         {tx.escrowStatus === 'SETTLED' && <CheckCircle2 className="w-3 h-3" />}
                         {tx.escrowStatus === 'ESCROW_LOCKED' && <Lock className="w-3 h-3" />}

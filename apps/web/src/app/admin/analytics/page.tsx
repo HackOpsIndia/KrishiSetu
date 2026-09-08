@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '../../../components/navigation/AppShell';
+import { api } from '../../../lib/api';
 import {
   TrendingUp,
   BarChart3,
@@ -19,24 +20,72 @@ import { formatCurrency, formatQuintal } from '../../../lib/format';
 
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'7D' | '30D' | '90D' | '1Y'>('30D');
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Canonical channel performance metrics
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const data = await api.getOpportunities();
+        if (Array.isArray(data) && data.length > 0) {
+          setOpportunities(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load opportunities for analytics:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const directBuyers = opportunities.filter((o) => o.channelType === 'DIRECT_BUYER');
+  const mandis = opportunities.filter((o) => o.channelType === 'MANDI_APMC');
+
   const channels = [
-    { name: 'Direct Food Processors (e.g., FreshMart)', share: '38%', avgNRP: 2925.20, uplift: '+11.6%', color: 'bg-[#ef4d23]' },
-    { name: 'FPO Pooled Aggregations (e.g., AgriFresh)', share: '24%', avgNRP: 3080.00, uplift: '+17.5%', color: 'bg-emerald-600' },
-    { name: 'Regional APMC Mandis (e.g., Pune APMC)', share: '26%', avgNRP: 2787.22, uplift: '+6.3%', color: 'bg-neutral-800' },
-    { name: 'Local Village Baselines (e.g., Talegaon)', share: '12%', avgNRP: 2622.00, uplift: 'Baseline (0%)', color: 'bg-neutral-400' },
+    {
+      name: 'Direct Food Processors & Retail',
+      share: directBuyers.length > 0 ? `${Math.round((directBuyers.length / (opportunities.length || 1)) * 60)}%` : '42%',
+      uplift: '+11.5%',
+      avgNRP: directBuyers.length > 0 ? directBuyers.reduce((s, b) => s + b.nrpPaise, 0) / directBuyers.length / 100 : 2925.20,
+      color: 'bg-emerald-500',
+    },
+    {
+      name: 'FPO Aggregation & Institutional Bulk',
+      share: '32%',
+      uplift: '+17.4%',
+      avgNRP: 3080.00,
+      color: 'bg-[#ef4d23]',
+    },
+    {
+      name: 'Regulated APMC Mandis',
+      share: mandis.length > 0 ? `${Math.round((mandis.length / (opportunities.length || 1)) * 40)}%` : '26%',
+      uplift: 'Baseline (0%)',
+      avgNRP: mandis.length > 0 ? mandis.reduce((s, b) => s + b.nrpPaise, 0) / mandis.length / 100 : 2680.00,
+      color: 'bg-neutral-400',
+    },
   ];
 
-  const mandiSpreads = [
-    { market: 'Hotel Grand & Institutional', nrp: 2997.28, spread: '+₹375.28', trend: 'up' },
-    { market: 'FreshMart Pre-Negotiation', nrp: 2925.20, spread: '+₹303.20', trend: 'up' },
-    { market: 'Pune Veggie Hub Semi-Wholesale', nrp: 2815.75, spread: '+₹193.75', trend: 'up' },
-    { market: 'Pune APMC Mandi', nrp: 2787.22, spread: '+₹165.22', trend: 'up' },
-    { market: 'RK Traders Spot', nrp: 2766.00, spread: '+₹144.00', trend: 'up' },
-    { market: 'Pimpri Sub-Yard', nrp: 2656.28, spread: '+₹34.28', trend: 'up' },
-    { market: 'Talegaon Local Yard (Baseline)', nrp: 2622.00, spread: '₹0.00', trend: 'neutral' },
-  ];
+  const mandiSpreads = (opportunities.length > 0 ? opportunities : [
+    { name: 'FreshMart Foods Ltd.', nrpPaise: 292520 },
+    { name: 'Hotel Grand Residency', nrpPaise: 299728 },
+    { name: 'Pune APMC (Gultekdi)', nrpPaise: 278722 },
+    { name: 'Pune Veggie Hub', nrpPaise: 274600 },
+    { name: 'Talegaon Dabhade Mandi', nrpPaise: 262200 },
+  ]).map((opp) => {
+    const nrp = opp.nrpPaise / 100;
+    const baseline = 2622.00;
+    const diff = nrp - baseline;
+    return {
+      market: opp.name,
+      nrp,
+      spread: diff >= 0 ? `+₹${diff.toFixed(2)}/qtl` : `-₹${Math.abs(diff).toFixed(2)}/qtl`,
+      trend: diff >= 0 ? 'up' : 'down',
+    };
+  });
+
+
 
   return (
     <AppShell
@@ -50,11 +99,10 @@ export default function AdminAnalyticsPage() {
               <button
                 key={t}
                 onClick={() => setTimeRange(t)}
-                className={`px-3 py-1 rounded-full font-semibold transition-colors ${
-                  timeRange === t
+                className={`px-3 py-1 rounded-full font-semibold transition-colors ${timeRange === t
                     ? 'bg-[#0b0f1a] text-white'
                     : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                  }`}
               >
                 {t}
               </button>
@@ -168,9 +216,8 @@ export default function AdminAnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <span
-                      className={`inline-flex items-center gap-0.5 font-bold ${
-                        item.trend === 'up' ? 'text-emerald-800' : 'text-neutral-500'
-                      }`}
+                      className={`inline-flex items-center gap-0.5 font-bold ${item.trend === 'up' ? 'text-emerald-800' : 'text-neutral-500'
+                        }`}
                     >
                       {item.trend === 'up' && <ArrowUpRight className="w-3.5 h-3.5" />}
                       {item.spread}

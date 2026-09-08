@@ -1,82 +1,90 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppShell } from '../../components/navigation/AppShell';
 import { AggregationModal } from '../../components/AggregationModal';
+import { api } from '../../lib/api';
 import {
   Users,
-  Sparkles,
+  TrendingUp,
+  Truck,
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  Truck,
-  TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 
 export default function FPOPage() {
   const [showAggregationModal, setShowAggregationModal] = useState(false);
   const [isPooled, setIsPooled] = useState(false);
-
-  // Canonical Cluster Data from FPO Aggregation Engine
-  const cluster = {
+  const [cluster, setCluster] = useState<{
+    fpoName: string;
+    fpoRegistration: string;
+    district: string;
+    members: any[];
+    excluded: any[];
+  }>({
     fpoName: 'Pune FPO Collective',
     fpoRegistration: 'MH-FPO-2024-001',
     district: 'Pune District, Maharashtra',
-    members: [
-      {
-        id: 'ramesh',
-        name: 'Ramesh Kumar',
-        village: 'Dehu Road',
-        distance: '0 km (You)',
-        commodity: 'Tomato Hybrid',
-        grade: 'A',
-        quantityQtl: 18,
-        status: isPooled ? 'Pooled' : 'Ready to Pool',
-        isSelf: true,
-      },
-      {
-        id: 'suresh',
-        name: 'Suresh Patil',
-        village: 'Dehu Road',
-        distance: '1.2 km away',
-        commodity: 'Tomato Hybrid',
-        grade: 'A',
-        quantityQtl: 20,
-        status: 'Pledged to Pool',
-        isSelf: false,
-      },
-      {
-        id: 'meena',
-        name: 'Meena Deshpande',
-        village: 'Talegaon Dabhade',
-        distance: '4.0 km away',
-        commodity: 'Tomato Hybrid',
-        grade: 'A',
-        quantityQtl: 30,
-        status: 'Pledged to Pool',
-        isSelf: false,
-      },
-    ],
-    excluded: [
-      {
-        name: 'Vijay Kulkarni',
-        village: 'Khed',
-        reason: 'Tomato (Local) Grade B not compatible with Grade A export specification',
-      },
-    ],
-  };
+    members: [],
+    excluded: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const pooledQtl = 68; // 18 + 20 + 30
+  useEffect(() => {
+    async function loadFpo() {
+      try {
+        setIsLoading(true);
+        const agg = await api.getFpoAggregation().catch(() => null);
+        if (agg && Array.isArray(agg.members) && agg.members.length > 0) {
+          setCluster({
+            fpoName: agg.fpoName || 'Pune FPO Collective',
+            fpoRegistration: agg.fpoRegistration || 'MH-FPO-2024-001',
+            district: agg.district || 'Pune District, Maharashtra',
+            members: agg.members,
+            excluded: agg.excluded || [],
+          });
+        } else {
+          // Fallback to lots from DB
+          const lots = await api.getLots().catch(() => []);
+          if (Array.isArray(lots) && lots.length > 0) {
+            setCluster((prev) => ({
+              ...prev,
+              members: lots.map((l: any, idx: number) => ({
+                id: l.id || `member-${idx}`,
+                name: l.farmerName || `Farmer ${idx + 1}`,
+                village: l.village || 'Dehu Road',
+                distance: idx === 0 ? '0 km (You)' : `${idx * 1.5} km away`,
+                commodity: l.commodity || 'Tomato Hybrid',
+                grade: l.grade || 'A',
+                quantityQtl: l.quantityQtl || l.quantity || 18,
+                status: isPooled ? 'Pooled' : 'Ready to Pool',
+                isSelf: idx === 0,
+              })),
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load FPO aggregation:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadFpo();
+  }, [isPooled]);
+
+  const pooledQtl = cluster.members.reduce((s, m) => s + (m.quantityQtl || 0), 0) || 68;
   const thresholdQtl = 50;
   const bulkAdvantagePerQtl = 297.04;
-  const totalRameshGain = Math.round(bulkAdvantagePerQtl * 18); // ₹5,346.72
+  const totalRameshGain = Math.round(bulkAdvantagePerQtl * 18);
 
   return (
     <AppShell
       badge="Collective Market Power"
-      title="FPO Collective Logistics &amp; Demand Unlock"
+      title="FPO Collective Logistics & Demand Unlock"
       subtitle="Small individual harvest lots combine to unlock high-volume institutional contracts and cut freight by 40%."
       actions={
         <button
@@ -85,7 +93,7 @@ export default function FPOPage() {
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#ef4d23] hover:bg-[#d83f18] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
         >
           <Users className="w-3.5 h-3.5" />
-          <span>{isPooled ? 'Manage Active Pool' : 'Join Cluster Pool (68 Qtl)'}</span>
+          <span>{isPooled ? 'Manage Active Pool' : `Join Cluster Pool (${pooledQtl} Qtl)`}</span>
         </button>
       }
     >
@@ -110,7 +118,7 @@ export default function FPOPage() {
                   AgriFresh Exports Ltd. Contract (Nashik Cargo Hub)
                 </h2>
                 <p className="text-xs text-neutral-600 mt-1 max-w-2xl leading-relaxed">
-                  AgriFresh requires a minimum single shipment of <strong>50 Quintals</strong>. Your individual lot of 18 Qtl is ineligible alone. By aggregating with Suresh Patil (20 Qtl) and Meena Deshpande (30 Qtl), the pooled shipment reaches <strong>68 Quintals</strong>, unlocking Maharashtra’s highest headline price at <strong>₹3,200/qtl</strong>.
+                  AgriFresh requires a minimum single shipment of <strong>{thresholdQtl} Quintals</strong>. Your individual lot of 18 Qtl is ineligible alone. By aggregating with cluster farmers, the pooled shipment reaches <strong>{pooledQtl} Quintals</strong>, unlocking Maharashtra’s highest headline price at <strong>₹3,200/qtl</strong>.
                 </p>
               </div>
 
@@ -118,16 +126,19 @@ export default function FPOPage() {
               <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-2">
                 <div className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-neutral-700">Volume Threshold Progress</span>
-                  <span className="font-bold text-emerald-800">68 Qtl / 50 Qtl Goal (136% Achieved)</span>
+                  <span className="font-bold text-emerald-800">
+                    {pooledQtl} Qtl / {thresholdQtl} Qtl Goal ({Math.round((pooledQtl / thresholdQtl) * 100)}% Achieved)
+                  </span>
                 </div>
                 <div className="w-full h-3 bg-neutral-200 rounded-full overflow-hidden flex">
-                  <div className="bg-emerald-500 h-full w-full" />
+                  <div
+                    className="bg-emerald-500 h-full"
+                    style={{ width: `${Math.min(100, Math.round((pooledQtl / thresholdQtl) * 100))}%` }}
+                  />
                 </div>
                 <div className="flex justify-between text-[11px] text-neutral-500">
-                  <span>Ramesh: 18 Qtl</span>
-                  <span>Suresh: 20 Qtl</span>
-                  <span>Meena: 30 Qtl</span>
-                  <span className="font-bold text-neutral-900">Total: 68 Qtl</span>
+                  <span>Threshold: {thresholdQtl} Qtl</span>
+                  <span className="font-bold text-neutral-900">Total Pooled: {pooledQtl} Qtl</span>
                 </div>
               </div>
 
@@ -142,8 +153,8 @@ export default function FPOPage() {
                   <span className="text-sm font-bold text-emerald-700">₹65/qtl (Full Truckload)</span>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <span className="text-[10px] text-emerald-700 block">Net Gain for Ramesh</span>
-                  <span className="text-sm font-extrabold text-emerald-900">+₹5,346 (+₹297/qtl)</span>
+                  <span className="text-[10px] text-emerald-700 block">Net Gain</span>
+                  <span className="text-sm font-extrabold text-emerald-900">+₹{totalRameshGain.toLocaleString('en-IN')} (+₹297/qtl)</span>
                 </div>
               </div>
 
@@ -152,9 +163,9 @@ export default function FPOPage() {
                 <button
                   type="button"
                   onClick={() => setShowAggregationModal(true)}
-                  className="px-6 py-2.5 rounded-full bg-[#ef4d23] hover:bg-[#d83f18] text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5"
+                  className="px-6 py-2.5 rounded-full bg-[#ef4d23] hover:bg-[#d83f18] text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>{isPooled ? 'View Pool Ledger' : 'Pledge 18 Qtl Lot to Pool'}</span>
+                  <span>{isPooled ? 'View Pool Ledger' : `Pledge Harvest Lot to Pool`}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
                 <Link
@@ -173,10 +184,10 @@ export default function FPOPage() {
                   Collective Value
                 </span>
                 <span className="text-3xl font-extrabold text-neutral-900 font-instrument block">
-                  ₹2,17,600
+                  ₹{(pooledQtl * 3200).toLocaleString('en-IN')}
                 </span>
                 <span className="text-xs text-neutral-500 block mt-0.5">
-                  Total 68 Qtl Export Contract
+                  Total {pooledQtl} Qtl Export Contract
                 </span>
               </div>
 
@@ -211,46 +222,52 @@ export default function FPOPage() {
               <p className="text-xs text-neutral-500">Farmers in Haveli/Dehu Road cluster eligible for Grade A consolidation.</p>
             </div>
             <span className="text-xs font-bold text-neutral-700 bg-neutral-100 px-3 py-1 rounded-full">
-              3 Compatible Lots
+              {cluster.members.length} Lots in Pool
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {cluster.members.map((member) => (
-              <div
-                key={member.id}
-                className={`p-4 rounded-2xl border transition-all ${
-                  member.isSelf
-                    ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-500/20'
-                    : 'bg-neutral-50 border-neutral-200'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-bold text-neutral-900">{member.name}</span>
-                  <span className="text-[11px] text-neutral-500">{member.distance}</span>
+          {cluster.members.length === 0 ? (
+            <p className="text-xs text-neutral-500 text-center py-6">
+              No cluster lots currently registered. Register a harvest lot to participate in FPO aggregation.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {cluster.members.map((member) => (
+                <div
+                  key={member.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    member.isSelf
+                      ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-500/20'
+                      : 'bg-neutral-50 border-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="font-bold text-neutral-900">{member.name}</span>
+                    <span className="text-[11px] text-neutral-500">{member.distance}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-xl font-bold font-instrument text-neutral-900">
+                      {member.quantityQtl} Qtl
+                    </span>
+                    <span className="text-xs text-neutral-600">{member.commodity}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] pt-2 border-t border-neutral-200/60">
+                    <span className="bg-white px-2 py-0.5 rounded border border-neutral-200 font-semibold text-emerald-800">
+                      Grade {member.grade}
+                    </span>
+                    <span className="font-medium text-neutral-600">{member.status}</span>
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-bold font-instrument text-neutral-900">
-                    {member.quantityQtl} Qtl
-                  </span>
-                  <span className="text-xs text-neutral-600">{member.commodity}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] pt-2 border-t border-neutral-200/60">
-                  <span className="bg-white px-2 py-0.5 rounded border border-neutral-200 font-semibold text-emerald-800">
-                    Grade {member.grade}
-                  </span>
-                  <span className="font-medium text-neutral-600">{member.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Incompatible lots note */}
           <div className="mt-5 p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200/70 flex items-center justify-between text-xs text-neutral-600">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                1 neighboring lot excluded: <strong>Vijay Kulkarni</strong> (Tomato Local Grade B does not meet export Grade A specification).
+                Automated Quality Filter: Only Grade A harvest lots are consolidated into export contracts.
               </span>
             </div>
             <span className="text-[11px] text-neutral-500">Quality Guard Active</span>
@@ -266,7 +283,7 @@ export default function FPOPage() {
           onConfirmAggregation={() => {
             setIsPooled(true);
             setShowAggregationModal(false);
-            alert('Cluster pool created! 68 Qtl aggregated. AgriFresh Exports contract unlocked at ₹3,200/qtl.');
+            alert('Cluster pool created! AgriFresh Exports contract unlocked at ₹3,200/qtl.');
           }}
         />
       )}

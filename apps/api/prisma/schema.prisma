@@ -522,3 +522,33 @@ enum AuthChallengePurpose {
   SENSITIVE_ACTION
 }
 
+// --- Opportunities ---
+
+model OpportunityRecord {
+  id                         String   @id @default(uuid())
+  rank                       Int      @default(1)
+  name                       String
+  channelType                String   // DIRECT_BUYER | MANDI_APMC
+  buyerType                  String?
+  location                   String
+  distanceKm                 Float
+  providesPickup             Boolean  @default(false)
+  grossPricePaise            Int
+  nrpPaise                   Int
+  totalRealizedPaise         Int
+  totalDeductionsPaise       Int
+  netMarginOverBaselinePaise Int
+  trustScore                 Float    @default(0.85)
+  paymentReliability         Float    @default(0.85)
+  verificationLevel          String   @default("PLATFORM_VERIFIED")
+  paymentTerm                String
+  deductions                 Json
+  recommendationReason       String
+  isEligible                 Boolean  @default(true)
+  ineligibilityReason        String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("opportunity_records")
+}
+

@@ -209,7 +209,46 @@ class ApiClient {
     return this.request<any>(`/api/lots/${lotId}/buyer-matches`);
   }
 
-  // Opportunities — THE core endpoint
+  // Opportunities — Database CRUD & Intelligence
+  async getOpportunities(params?: { channelType?: string; isEligible?: boolean; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.channelType) query.append('channelType', params.channelType);
+    if (typeof params?.isEligible === 'boolean') query.append('isEligible', String(params.isEligible));
+    if (params?.search) query.append('search', params.search);
+    const qs = query.toString();
+    return this.request<any[]>(`/api/opportunities${qs ? `?${qs}` : ''}`);
+  }
+
+  async getOpportunity(id: string) {
+    return this.request<any>(`/api/opportunities/${id}`);
+  }
+
+  async createOpportunity(data: any) {
+    return this.request<any>('/api/opportunities', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOpportunity(id: string, data: any) {
+    return this.request<any>(`/api/opportunities/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteOpportunity(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/api/opportunities/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async resetOpportunities() {
+    return this.request<{ success: boolean; message: string; count: number; data: any[] }>('/api/opportunities/reset', {
+      method: 'POST',
+    });
+  }
+
   async analyzeOpportunities(lotId: string) {
     return this.request<any>(`/api/opportunities/${lotId}`);
   }
@@ -217,6 +256,18 @@ class ApiClient {
   // FPO Aggregation
   async getFpoAggregation() {
     return this.request<any>('/api/fpo/aggregation-opportunities');
+  }
+
+  // Demands
+  async getDemands() {
+    return this.request<any[]>('/api/demands');
+  }
+
+  async createDemand(data: any) {
+    return this.request<any>('/api/demands', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Markets
