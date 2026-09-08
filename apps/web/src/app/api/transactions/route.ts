@@ -16,7 +16,16 @@ export async function GET() {
         orderBy: { createdAt: 'desc' },
       });
     } catch {
-      txs = [];
+      try {
+        txs = await prisma.transaction.findMany({
+          include: { lot: true },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch {
+        txs = await prisma.transaction.findMany({
+          orderBy: { createdAt: 'desc' },
+        }).catch(() => []);
+      }
     }
 
     const formatted = txs.map((t) => ({

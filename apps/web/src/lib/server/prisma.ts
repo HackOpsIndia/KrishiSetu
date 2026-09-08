@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { ensureDatabaseSchema } from './ensureSchema';
 
 export type ExtendedPrismaClient = PrismaClient & {
   opportunityRecord: any;
@@ -31,7 +30,6 @@ function getPrisma(): ExtendedPrismaClient {
   if (!globalForPrisma.prisma) {
     try {
       globalForPrisma.prisma = createPrismaClient();
-      ensureDatabaseSchema(globalForPrisma.prisma).catch(() => {});
     } catch (err: any) {
       console.warn('[PrismaClient] Lazy initialization deferred:', err?.message);
     }
@@ -46,20 +44,6 @@ export const prisma: ExtendedPrismaClient = new Proxy({} as ExtendedPrismaClient
     const value = (instance as any)[prop];
     if (typeof value === 'function') {
       return value.bind(instance);
-    }
-    if (typeof value === 'object' && value !== null) {
-      return new Proxy(value, {
-        get(modelTarget, modelProp) {
-          const method = (modelTarget as any)[modelProp];
-          if (typeof method === 'function') {
-            return async (...args: any[]) => {
-              await ensureDatabaseSchema(instance).catch(() => {});
-              return method.apply(modelTarget, args);
-            };
-          }
-          return method;
-        },
-      });
     }
     return value;
   },
