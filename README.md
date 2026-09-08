@@ -1,206 +1,218 @@
-# KrishiSetu (कृषिसेतु) — Market-Decision & Net Realised Price Platform
+# 🌾 KrishiSetu (कृषिसेतु)
+### Next-Generation Agricultural Market Intelligence & Direct Transaction Platform
 
-[![SIH 2026](https://img.shields.io/badge/SIH-2026-green.svg)](https://sih.gov.in)
-[![Problem Statement](https://img.shields.io/badge/Problem%20Statement-SIH26132-blue.svg)](https://sih.gov.in)
-[![Production](https://img.shields.io/badge/Production-Live%20Vercel-brightgreen.svg)](https://krishisetu-lemon.vercel.app)
-[![Demo](https://img.shields.io/badge/Demo%20Staging-Active-emerald.svg)](https://krishisetu-demo.vercel.app)
-[![Tests](https://img.shields.io/badge/Tests-142%2F142%20Passing-brightgreen.svg)]()
-[![Team](https://img.shields.io/badge/Team-HackOps-orange.svg)](https://github.com/HackOpsIndia)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)]()
+[![SIH 2026](https://img.shields.io/badge/SIH-2026-10b981.svg?style=for-the-badge&logo=target)](https://sih.gov.in)
+[![Problem Statement](https://img.shields.io/badge/Problem%20Statement-SIH26132-3b82f6.svg?style=for-the-badge)](https://sih.gov.in)
+[![Production](https://img.shields.io/badge/Production-Live%20Vercel-059669.svg?style=for-the-badge&logo=vercel)](https://krishisetu-lemon.vercel.app)
+[![Demo](https://img.shields.io/badge/Demo%20Staging-Active-ef4d23.svg?style=for-the-badge&logo=vercel)](https://krishisetu-demo.vercel.app)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%20(Neon)-00e599.svg?style=for-the-badge&logo=postgresql)](https://neon.tech)
+[![Team](https://img.shields.io/badge/Team-HackOps-f59e0b.svg?style=for-the-badge)](https://github.com/HackOpsIndia)
 
-> **KrishiSetu** bridges the critical information gap for Indian farmers by shifting market decisions from deceptive **Gross Mandi Prices** to true **Net Realised Price (NRP)** — factoring in real-time freight, mandi cess, loading/unloading fees, and shelf-life degradation risk.
-
----
-
-## 🌐 Live Deployments (Evaluation Ready)
-
-| Environment | Live URL | Deployment Status | Purpose |
-|---|---|:---:|---|
-| **Production** | [**https://krishisetu-lemon.vercel.app**](https://krishisetu-lemon.vercel.app) | `● Ready (HTTP 200)` | Primary evaluation build tracking `main` |
-| **Demo / Staging** | [**https://krishisetu-demo.vercel.app**](https://krishisetu-demo.vercel.app) | `● Ready (HTTP 200)` | Fast-preview staging build tracking `develop` |
-| **Backend API (Local/Cloud)** | `http://localhost:4000/api` | `● Active` | NestJS 10 REST & State Machine Gateway |
-| **API Swagger Docs** | `http://localhost:4000/api/docs` | `● Active` | Interactive OpenAPI / Swagger documentation |
+> **KrishiSetu** bridges the critical information gap for Indian farmers by shifting agricultural selling decisions from deceptive **Gross Mandi Prices** to true **Net Realised Price (NRP)** — factoring in real-time freight, APMC mandi fees, loading/unloading costs, and temperature-sensitive transit spoilage risk.
 
 ---
 
-## 🌟 The Core Problem (SIH26132)
+## 🌐 Quick Links & Live Deployments
 
-Indian farmers often travel to distant APMC mandis attracted by higher advertised gross rates (e.g. ₹3,050/qtl at Pune APMC vs ₹2,800/qtl at local Talegaon), only to discover that after deducting transportation costs, APMC commission/cess, unloading charges, and in-transit spoilage, their actual **take-home earnings are significantly lower**. Furthermore, smallholder farmers with sub-threshold harvests cannot access lucrative corporate buyers (like FreshMart or AgriFresh) that enforce minimum order quantities (MOQs).
-
-### The KrishiSetu Solution
-1. **Real-Time Net Realised Price (NRP) Engine**: Instantly computes actual in-pocket income across all nearby APMC mandis and verified institutional buyers.
-2. **FPO Harvest Aggregation**: Dynamically clusters small lots from nearby farmers into single institutional-grade shipments, unlocking bulk premium contracts (e.g. 50Q MOQ unlocked via 68Q cluster).
-3. **Transparent Price Discovery & Counter-Offers**: Algorithmic negotiation with buyer counter-offer guardrails to prevent distressed sales.
-4. **Milestone Escrow Settlements**: Guaranteed payments with transparent deduction audits and dispute arbitration (20% advance, 60% weigh-in, 20% quality QC).
-5. **Inclusive 3-in-1 Authentication**: Passwordless 6-digit Email OTP for rural farmers, Google OAuth 2.0 Web Client, and encrypted password authentication.
+| Environment | URL | Deployment Status | Notes |
+|:---|:---|:---:|:---|
+| **Production Platform** | [**https://krishisetu-lemon.vercel.app**](https://krishisetu-lemon.vercel.app) | `● Ready (200 OK)` | Primary production release tracking `main` |
+| **Demo Staging Platform** | [**https://krishisetu-demo.vercel.app**](https://krishisetu-demo.vercel.app) | `● Ready (200 OK)` | Evaluation & live testing instance tracking `develop` |
+| **API Documentation** | `http://localhost:4000/api/docs` | `● Active` | Interactive Swagger / OpenAPI Specification |
 
 ---
 
-## 🔄 How the Website Works (End-to-End Flow)
+## 📸 Visual Tour of KrishiSetu
 
-> 📖 **Comprehensive Deep Dive:** For a full, multi-screen walkthrough with failure-mode defenses and API mechanics, read [`docs/README.md`](docs/README.md).
+Explore the high-resolution screenshots capturing every module of the platform:
+
+### 1. 🌟 Public Discovery & Motion Landing
+> Modern, interactive landing page educating farmers on Net Realised Price vs Gross Mandi Rates, featuring live commodity ticker and interactive cost simulator.
+
+![KrishiSetu Public Landing Page](docs/screenshots/01_landing.png)
+
+---
+
+### 2. 🌾 Seller & Farmer Command Center
+> Real-time farmer overview with harvest lot statuses, MSP alerts, nearby APMC benchmark prices, and 1-click access to verified corporate buyers.
+
+![Farmer Dashboard](docs/screenshots/02_farmer_dashboard.png)
+
+---
+
+### 3. 📊 Net Realised Price (NRP) Decision Engine
+> Server-authoritative comparison engine analyzing 7 distinct selling channels simultaneously. Quantifies direct buyers vs APMC mandis to highlight true take-home earnings.
+
+![Market Intelligence & Net Realised Price](docs/screenshots/03_markets_decision.png)
+
+---
+
+### 4. 📦 Harvest Lot Lifecycle Management
+> Digital lot registration with variety classification, quantity in quintals, quality grading parameters, and real-time counter-offer indicators.
+
+![Farmer Lots Management](docs/screenshots/04_farmer_lots.png)
+
+---
+
+### 5. 🚜 FPO Logistics Pooling & Aggregation
+> Clusters smallholder harvests within a 15 km radius into unified bulk shipments, unlocking corporate buyer Minimum Order Quantities (MOQs) and cutting freight by up to 38%.
+
+![FPO Collective Pooling](docs/screenshots/05_fpo_pooling.png)
+
+---
+
+### 6. 🏢 Institutional Buyer Dashboard
+> Comprehensive procurement hub for food processors, retail supermarket chains, and exporters to track active contracts, delivery schedules, and quality inspections.
+
+![Buyer Dashboard](docs/screenshots/06_buyer_dashboard.png)
+
+---
+
+### 7. 📋 Buyer Demand Broadcasting
+> Institutional procurement interface allowing verified buyers to publish commodity requirements, target grades, delivery timelines, and price bands.
+
+![Buyer Demands](docs/screenshots/07_buyer_demand.png)
+
+---
+
+### 8. 🤝 Bilateral Offer Negotiation & Contracts
+> Algorithmic counter-offer corridor with anti-predatory guardrails protecting farmers from distress sales below Minimum Support Price (MSP).
+
+![Buyer Offers & Negotiations](docs/screenshots/08_buyer_offers.png)
+
+---
+
+### 9. 🛡️ Platform Administration & Oversight
+> State-level governance dashboard tracking real-time trading volumes, market trends, dispute arbitration, and platform health metrics.
+
+![Platform Admin Dashboard](docs/screenshots/09_admin_dashboard.png)
+
+---
+
+### 10. 👥 RBAC User Management & Role Governance
+> Centralized directory powered by PostgreSQL for promoting users to Administrator or Staff roles, managing account statuses, and inspecting audit trails.
+
+![Admin User Directory](docs/screenshots/10_admin_users.png)
+
+---
+
+### 11. 👤 Dynamic Profile & Vercel Blob Photo Upload
+> Unified user identity allowing seamless 1-click switching between **Seller (Farmer)** and **Buyer (Procurement)** modes, with custom photo uploads via Vercel Blob storage.
+
+![User Profile & Role Switcher](docs/screenshots/11_user_profile.png)
+
+---
+
+## 🧠 The Core Innovation: Net Realised Price (NRP)
+
+Indian smallholders frequently travel 40–80 km to distant APMC mandis lured by higher gross rates, only to lose substantial margins to hidden deductions. KrishiSetu solves this mathematically:
+
+$$\text{NRP} = \text{Gross Price} - \left( \text{Freight} + \text{APMC Cess} + \text{Loading/Weighing} + \text{Transit Loss} \right)$$
+
+### Cost Breakdown Comparison (18 Quintals Tomato Hybrid A)
+
+| Cost Component | Local APMC Mandi | Direct Buyer (FreshMart Foods) | Advantage with KrishiSetu |
+|:---|:---:|:---:|:---|
+| **Gross Advertised Rate** | ₹3,050 / qtl | ₹2,960 / qtl | Mandi appears +₹90 higher |
+| **Transportation Freight** | -₹280 / qtl (65 km) | **₹0** (Farmgate Pickup) | **+₹280 / qtl saved** |
+| **APMC Cess & Commission** | -₹152.50 / qtl (5%) | **₹0** (Exempt Direct Trade) | **+₹152.50 / qtl saved** |
+| **Handling & Loading** | -₹35 / qtl | -₹20 / qtl | **+₹15 / qtl saved** |
+| **Transit Spoilage Loss** | -₹61 / qtl (2%) | -₹15 / qtl (0.5% Cold-Chain) | **+₹46 / qtl saved** |
+| **Net Realised Price (NRP)** | **₹2,521.50 / qtl** | **₹2,925.00 / qtl** | **+₹403.50 / qtl net gain** |
+| **Total Realized (18 Qtl)** | ₹45,387 | **₹52,650** | **+₹7,263 More Cash in Hand!** |
+
+---
+
+## 🔒 Security, Privacy & Role Architecture
+
+- **Zero Hardcoded Personal Data:** In compliance with strict privacy standards, no personal or administrator email addresses are hardcoded in source code.
+- **Dynamic Administrator Governance:** Platform administrators are configured via the secure `ADMIN_EMAILS` environment variable in Vercel.
+- **Role-Based Access Control (RBAC):**
+  - **Seller (Farmer/FPO):** Manage lots, analyze NRP opportunities, participate in pooling clusters.
+  - **Buyer (Procurement):** Publish procurement demands, negotiate contracts, fund milestone escrows.
+  - **Self-Service Switcher:** Registered users can effortlessly toggle between Seller and Buyer modes without creating multiple accounts.
+  - **Admin:** Promoted exclusively by system administrators to govern access, monitor trades, and audit logs.
+
+---
+
+## 🏗️ Architecture & Technology Stack
 
 ```mermaid
-flowchart TD
-    A[1. Visitor on Landing Page] --> B{Sign In / Register}
-    
-    B -->|Option 1: Email OTP| C1[6-Digit Code via Gmail SMTP]
-    B -->|Option 2: Google OAuth| C2[Google Web Client Verification]
-    B -->|Option 3: Password| C3[Bcrypt + JWT Stateless Token]
-    
-    C1 & C2 & C3 --> D[Authenticated Session with RBAC Role]
-    
-    D --> E[2. Farmer Creates Harvest Lot on /lots]
-    E --> F[Status: LISTED - 18Q Tomato Grade A]
-    
-    F --> G[3. NRP Engine Evaluates 7 Channels in Real Time]
-    G --> H{Farmer Chooses Selling Path}
-    
-    H -->|Path A: Direct Corporate| I[Rank #1: FreshMart Foods - 12 km]
-    I --> J[Gross: ₹3,100 -> Net Realised: ₹2,925.20/qtl]
-    J --> K[Contract Created: Buyer Locks 100% into Escrow]
-    
-    H -->|Path B: Bulk MOQ Contract| L[AgriFresh requires 50Q MOQ - Individually Ineligible]
-    L --> M[Join FPO Collective Logistics Pool on /fpo]
-    M --> N[Cluster 3 Farmers: Ramesh 18Q + Suresh 20Q + Ganesh 30Q = 68Q]
-    N --> O[50Q MOQ Unlocked! Freight reduced by 38%]
-    O --> K
-    
-    K --> P[4. Milestone 1: 20% released on verified truck dispatch]
-    P --> Q[5. Milestone 2: 60% released on warehouse weighbridge verification]
-    Q --> R[6. Milestone 3: 20% released on digital QC approval]
-    R --> S[7. Settled! ₹52,653.60 transferred directly to Farmer]
+graph TD
+    Client[Next.js 14 App Router / React 18 / TailwindCSS]
+    VercelEdge[Vercel Serverless & Edge API Routes]
+    VercelBlob[Vercel Blob Storage - Avatars]
+    NeonDB[(Neon Serverless PostgreSQL Database)]
+    PrismaORM[Prisma ORM Client]
+
+    Client -->|HTTPS REST / JSON| VercelEdge
+    Client -->|Direct Media Upload| VercelBlob
+    VercelEdge -->|Connection Pool| PrismaORM
+    PrismaORM -->|SQL Queries| NeonDB
+    VercelBlob -.->|Public CDN URL| Client
 ```
 
-### Detailed Operational Steps:
-1. **Discovery & Exploration (`/`):** Visitors explore market trends and the 18Q Tomato scenario live on the MotionSites cinematic landing page with interactive gross vs net sliders.
-2. **Inclusive Authentication (`AuthModal`):** Farmers authenticate passwordlessly with 6-digit Email OTP (via Gmail SMTP), corporate buyers via Google OAuth 2.0, or admins via encrypted passwords. The dialog is rendered via React Portals (`createPortal`) to prevent window clipping.
-3. **Harvest Listing (`/lots`):** Farmers record harvest volume (18 Quintals), variety (Hybrid Tomato), harvest date, and Grade A quality parameters.
-4. **Real-Time Decision Intelligence (`/markets` & `/dashboard`):** The server-authoritative Net Realised Price (NRP) engine evaluates 7 channels simultaneously, computing freight, cess, loading fees, and temperature-based spoilage decay to recommend FreshMart (+₹2,487.60 profit).
-5. **FPO Harvest Aggregation (`/fpo`):** Smallholder harvests within a 15 km radius are clustered into a unified 68Q pool, meeting AgriFresh's 50Q MOQ and unlocking 38% logistics savings.
-6. **Bilateral Counter-Offers (`/buyer`):** Institutional buyers bid with algorithmic guardrails ($\text{Price}_{\min} = \max(\text{MSP}, \text{Median} - 1.5\sigma)$) preventing predatory pricing.
-7. **3-Stage Milestone Escrow (`/transactions`):** 100% pre-funded payment is locked in Escrow; released in 3 verifiable milestones: 20% on vehicle dispatch, 60% on weighbridge check-in, and 20% on quality acceptance.
+- **Frontend & App Gateway:** Next.js 14, React 18, TailwindCSS, Lucide Icons, Recharts
+- **Database & Persistence:** PostgreSQL via Neon Serverless, Prisma ORM
+- **Object Storage:** Vercel Blob (`@vercel/blob`) for cloud-hosted user profile photos
+- **Authentication:** Inclusive 3-way auth (Google OAuth 2.0, 6-Digit Email OTP via Gmail SMTP, Encrypted Credentials)
+- **Monorepo Management:** Turborepo, TypeScript 5.5
 
 ---
 
-## 👥 Team HackOps — Roles & Member Study Guides
+## 🚀 Quick Start & Local Development
 
-Every member of Team HackOps has a comprehensive, beginner-to-advanced study guide with architectural diagrams and hackathon viva defense Q&A.
+### Prerequisites
+- Node.js `v20+` or `v22+`
+- npm `v10+`
+- PostgreSQL instance (or Neon database connection string)
 
-| Member | Role & Workstream | GitHub | Assigned Branch | In-Depth Study Guides |
-|---|---|---|---|:---:|
-| **Ananya Pandey** | **Team Leader:** Monorepo Architecture, Turborepo Pipeline, Vercel Production Deployments, CI/CD Gatekeeping | [`Ananyapandey-dev`](https://github.com/Ananyapandey-dev) | `feature/integration-release` | [Study Guide](docs/members/ananya-pandey/README.md) |
-| **Rama** | **Farmer & FPO Experience:** Command Center, Markets & Buyers, My Lots, FPO Pooling, Ramesh 18Q Tomato Scenario | [`ramako7777-spec`](https://github.com/ramako7777-spec) | `feature/farmer-fpo` | [Study Guide](docs/members/rama/README.md) |
-| **Aman Kesarwani** | **Buyer Experience:** Corporate Procurement, Demand Matching, Counter-Offer Corridor, Milestone Escrow | [`amankesarwani01`](https://github.com/amankesarwani01) | `feature/buyer` | [Study Guide](docs/members/aman-kesarwani/README.md) |
-| **Jatin Joshi** | **Backend & APIs:** NestJS 10, Server-Authoritative State Machine, Prisma ORM / PostgreSQL, 142 Passing Tests | [`jatinjoshi200803-stack`](https://github.com/jatinjoshi200803-stack) | `feature/backend` | [Study Guide](docs/members/jatin-joshi/README.md) |
-| **Bhavishya Gangola** | **Auth, Security & Governance:** Email OTP (Gmail SMTP), Google OAuth 2.0, RBAC Guards, Admin Panel (`/admin/users`) | [`bhavishyagangola-dev`](https://github.com/bhavishyagangola-dev) | `feature/auth-admin` | [Study Guide](docs/members/bhavishya-gangola/README.md) |
-| **Riya Adhikari** | **UI/UX & QA:** MotionSites Hero, Emerald Glassmorphism, React Portals (`createPortal`), Responsive Design | [`Nurizz07`](https://github.com/Nurizz07) | `feature/ui-qa-docs` | [Study Guide](docs/members/riya-adhikari/README.md) |
-
-*Full team roster and collaboration matrix are documented in [`docs/TEAM.md`](docs/TEAM.md) and [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md).*
-
----
-
-## 🏛️ System Architecture & Monorepo Layout
-
-```
-KrishiSetu/
-├── apps/
-│   ├── web/                    # Next.js 14 frontend (App Router, Glassmorphism, React Portals)
-│   └── api/                    # NestJS 10 backend with Prisma ORM & PostgreSQL
-├── packages/
-│   └── shared/                 # 7 Server-authoritative domain engines, types & canonical data
-├── docs/                       # Architecture, deployment, evaluator demo scripts, member guides
-│   └── members/                # Comprehensive beginner-to-advanced study guides for all 6 members
-├── turbo.json                  # Turborepo task pipeline definition
-├── package.json                # Workspaces root configuration
-└── scripts/                    # Canonical demo scenario reset & test scripts
-```
-
-### The 7 Mathematical Domain Engines (`packages/shared/src/engines/`)
-1. **NRP Calculation Engine**: Computes true net cash in hand factoring freight, cess, loading fees, and shelf-life decay.
-   $$\text{NRP} = \text{Gross Price} - \text{Freight} - \text{Handling} - \text{Cess} - \text{Spoilage Risk}$$
-2. **Quality Degradation Engine**: Exponential shelf-life decay modeling based on temperature and transit duration.
-3. **Aggregation Engine**: Dynamic geospatial harvest clustering to unlock institutional Minimum Order Quantities (MOQs).
-4. **Logistics & Freight Engine**: Distance matrix dynamic freight routing with LCV capacity optimization.
-5. **Dynamic Pricing Engine**: Automated corridor calculation & bilateral counter-offer bounds.
-6. **Escrow & Settlement Engine**: 3-stage milestone release (20% dispatch, 60% weigh-in, 20% quality acceptance).
-7. **Dispute Resolution Engine**: Pro-rata quality deduction matrix eliminating unfair produce rejection.
-
----
-
-## 🔐 Comprehensive Authentication Suite
-
-KrishiSetu supports three frictionless, production-configured authentication methods:
-1. **Email OTP (Passwordless):**
-   - 6-digit cryptographically generated OTP with 10-minute TTL.
-   - Dispatched via enterprise Gmail SMTP transport with automated whitespace sanitization.
-2. **Google OAuth 2.0:**
-   - Powered by Google Identity Services Web Client (configured via `NEXT_PUBLIC_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID`).
-   - Server-side cryptographic token signature verification on NestJS.
-3. **Password & JWT:**
-   - Bcrypt-hashed credentials (10 rounds) + HS256 stateless JWT bearer tokens.
-   - Declarative `@Roles()` decorators and `RolesGuard` enforcing access across `FARMER`, `BUYER`, `FPO_ADMIN`, and `ADMIN`.
-
----
-
-## 🎯 Verified Canonical Demo Walkthrough
-
-KrishiSetu is pre-loaded with the official SIH canonical scenario:
-- **Farmer:** Ramesh Kumar, Talegaon
-- **Harvest:** 18 Quintals Tomato Hybrid Grade A
-- **Talegaon APMC:** NRP ₹2,622/qtl (Total ₹47,196)
-- **Pimpri APMC:** NRP ₹2,656/qtl (Total ₹47,808)
-- **Pune APMC:** Gross ₹3,050/qtl $\rightarrow$ **NRP ₹2,787/qtl (Total ₹50,166)**
-- **FreshMart Direct:** Gross ₹3,100/qtl $\rightarrow$ **NRP ₹2,925.20/qtl (Total ₹52,653.60 — +₹2,487.60 Profit!)**
-- **AgriFresh Corporate Demand:** Minimum 50 Qtl (Individually ineligible; unlocked via FPO pool at 68 Qtl with 38% logistics savings)
-
-To reset demo state at any time:
+### 1. Clone the Repository
 ```bash
-npm run demo:reset
-```
-
-See [`docs/DEMO.md`](docs/DEMO.md) for the complete evaluator presentation script.
-
----
-
-## 🚀 Quick Start & Local Setup
-
-### 1. Prerequisites
-- Node.js >= 18.0.0
-- npm >= 9.0.0
-- PostgreSQL (or automated mock fallback mode)
-
-### 2. Installation & Run
-```bash
-# Clone the repository
 git clone https://github.com/HackOpsIndia/KrishiSetu.git
 cd KrishiSetu
-
-# Install monorepo dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
-
-# Run automated tests across entire platform (142/142 passing)
-npm test
-
-# Build all applications and shared packages
-npm run build
-
-# Start both frontend and backend concurrently
-npm run dev
 ```
 
-- **Frontend:** [http://localhost:3000](http://localhost:3000)
-- **Backend API:** [http://localhost:4000/api](http://localhost:4000/api)
-- **API Swagger Docs:** [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+Create `.env` in `apps/web/` and `apps/api/`:
+```env
+DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require"
+ADMIN_EMAILS="krishisetu.in@gmail.com"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token_here"
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="your_google_client_id"
+```
+
+### 4. Run Database Migrations
+```bash
+npx prisma generate --schema=apps/api/prisma/schema.prisma
+```
+
+### 5. Launch Development Server
+```bash
+npm run dev --workspace=@krishisetu/web
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📄 License & Attribution
+## 👥 Team HackOps — Smart India Hackathon 2026
 
-Curated and developed by **Team HackOps** for the Smart India Hackathon (SIH) 2026.  
-Released under the MIT License.
+| Team Member | Core Focus Areas | GitHub Profile |
+|:---|:---|:---:|
+| **Ananya Pandey** | Team Lead • Monorepo Architecture • CI/CD & Deployments | [@Ananyapandey-dev](https://github.com/Ananyapandey-dev) |
+| **Rama** | Farmer & FPO Experience • NRP Optimization Engine | [@ramako7777-spec](https://github.com/ramako7777-spec) |
+| **Aman Kesarwani** | Institutional Buyer Portal • Contract & Escrow Workflows | [@amankesarwani01](https://github.com/amankesarwani01) |
+| **Jatin Joshi** | Backend & Database • Prisma ORM & State Machine | [@jatinjoshi200803-stack](https://github.com/jatinjoshi200803-stack) |
+| **Bhavishya Gangola** | Security & Auth • RBAC Governance & Admin System | [@bhavishyagangola-dev](https://github.com/bhavishyagangola-dev) |
+| **Riya Adhikari** | UI/UX Design System • Responsive Layouts & Accessibility | [@Nurizz07](https://github.com/Nurizz07) |
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ for Indian Farmers by <b>Team HackOps</b> • Smart India Hackathon 2026</sub>
+</div>
