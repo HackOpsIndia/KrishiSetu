@@ -249,6 +249,36 @@ class ApiClient {
     });
   }
 
+  // KrishiSetu AI Market Assistant
+  async sendChatMessage(payload: {
+    message: string;
+    conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    language?: 'en' | 'hi';
+    context?: {
+      crop?: string;
+      quantityQtl?: number;
+      location?: string;
+      transportCost?: number;
+    };
+  }) {
+    return this.request<{
+      reply: string;
+      cardType?: 'comparison' | 'trend' | 'value_calculation' | 'fpo' | 'advisory';
+      cardData?: any;
+      actions?: Array<{ label: string; action: string; href?: string; prompt?: string }>;
+      isDemoAi: boolean;
+      sessionContext?: {
+        crop?: string;
+        quantityQtl?: number;
+        location?: string;
+      };
+      disclaimer?: string;
+    }>('/api/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   async analyzeOpportunities(lotId: string) {
     return this.request<any>(`/api/opportunities/${lotId}`);
   }

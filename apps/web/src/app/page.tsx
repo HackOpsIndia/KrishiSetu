@@ -233,6 +233,125 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 3.5 AI MARKET ASSISTANT SECTION (Section 29) */}
+      <section className="w-full bg-white py-16 px-4 sm:px-6 lg:px-8 border-y border-neutral-200/80">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1 text-xs font-semibold text-[#ef4d23] mb-3">
+              <SparklesIcon className="w-3.5 h-3.5" />
+              <span>AI-Powered Decision Layer</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight">
+              From Market Data to Better Decisions
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-600 mt-2 leading-relaxed">
+              KrishiSetu doesn&apos;t just show raw numbers. Our conversational market intelligence assistant translates complex APMC arrivals and buyer demand into clear, actionable advice.
+            </p>
+          </div>
+
+          {/* 4-Step Visual Story Arc */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            {/* Step 1 */}
+            <div className="bg-[#fbfaf8] border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-orange-100/80 text-[#ef4d23] flex items-center justify-center font-bold text-base mb-3">
+                  🌾
+                </div>
+                <div className="text-[11px] font-bold text-[#ef4d23] uppercase tracking-wider mb-1">Step 1</div>
+                <h3 className="font-bold text-neutral-900 text-sm mb-1">Market Data</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Real-time arrivals, modal prices, distance kilometers and buyer requirements across all active mandis.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-neutral-200/60 text-[11px] text-neutral-400 font-mono">
+                ↓ Feeds Intelligence
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-[#fbfaf8] border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center font-bold text-base mb-3">
+                  ⚡
+                </div>
+                <div className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1">Step 2</div>
+                <h3 className="font-bold text-neutral-900 text-sm mb-1">AI Analysis</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Calculates freight deductions, moisture shrinkage risk, transit losses, and historical price trajectory.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-neutral-200/60 text-[11px] text-neutral-400 font-mono">
+                ↓ Generates Options
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-[#fbfaf8] border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center font-bold text-base mb-3">
+                  💡
+                </div>
+                <div className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Step 3</div>
+                <h3 className="font-bold text-neutral-900 text-sm mb-1">Simple Recommendation</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Provides side-by-side comparison, estimated net profit, and hold vs sell advice in clear Hindi or English.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-neutral-200/60 text-[11px] text-neutral-400 font-mono">
+                ↓ Empowers Grower
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="bg-[#fbfaf8] border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center font-bold text-base mb-3">
+                  🤝
+                </div>
+                <div className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">Step 4</div>
+                <h3 className="font-bold text-neutral-900 text-sm mb-1">Farmer Decision</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Confident, informed selling with exact knowledge of net earnings, transport deductions, and FPO benefits.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-neutral-200/60 text-[11px] text-neutral-400 font-mono">
+                ✓ Maximum Net Return
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Banner to Open Chatbot */}
+          <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+            <div className="space-y-2 text-center sm:text-left">
+              <div className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-xs text-amber-200 font-medium">
+                <span>🤖</span>
+                <span>Bilingual English / हिन्दी Voice & Text</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+                Try KrishiSetu AI Market Assistant Now
+              </h3>
+              <p className="text-xs sm:text-sm text-neutral-300 max-w-xl">
+                Ask about wheat prices today, best nearby mandis, or calculate net returns for 20 quintals.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('open-krishisetu-ai', {
+                    detail: { prompt: 'I have 20 quintals of wheat ready to sell. Which nearby mandi is offering the best price and whether I should sell now or wait?' },
+                  }),
+                );
+              }}
+              className="px-6 py-3.5 rounded-2xl bg-[#ef4d23] hover:bg-[#d84018] text-white font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <span>Try KrishiSetu AI</span>
+              <SparklesIcon className="w-4 h-4 text-amber-200" />
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* 4. RANKED OPPORTUNITIES SECTION */}
       <section id="opportunities" className="w-full bg-[#ededed] py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">

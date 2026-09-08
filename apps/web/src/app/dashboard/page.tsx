@@ -145,6 +145,68 @@ export default function FarmerDashboard() {
           </div>
         )}
 
+        {/* AI Assistant Card (Section 28) */}
+        <div className="bg-gradient-to-br from-neutral-900 via-neutral-900 to-[#1e1e24] text-white rounded-3xl p-5 sm:p-6 shadow-md border border-neutral-800 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#ef4d23]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🌾</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#ef4d23]">KrishiSetu AI</span>
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                  Active Intelligence
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                Need help deciding where to sell?
+              </h3>
+              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
+                Ask KrishiSetu AI about prices, trends, net realizations and nearby markets. Get instant answers grounded in real benchmark data.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('open-krishisetu-ai', {
+                      detail: { prompt: 'Which mandi has the best price for wheat?' },
+                    }),
+                  );
+                }}
+                className="px-5 py-3 rounded-2xl bg-[#ef4d23] hover:bg-[#d84018] text-white font-semibold text-xs sm:text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>Ask AI</span>
+                <Sparkles className="w-4 h-4 text-amber-200" />
+              </button>
+            </div>
+          </div>
+
+          {/* 3 Suggested Questions */}
+          <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-neutral-400 text-[11px] font-medium">Suggested questions:</span>
+            {[
+              'Best mandi for wheat?',
+              'Should I sell now?',
+              'Find nearby FPO',
+            ].map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('open-krishisetu-ai', {
+                      detail: { prompt: q },
+                    }),
+                  );
+                }}
+                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-neutral-200 text-xs font-medium transition active:scale-95 border border-white/10"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* HERO RECOMMENDATION CARD */}
         {topOpportunity && lot ? (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-500 shadow-sm relative overflow-hidden">

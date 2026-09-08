@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^2.21.0",
     "@krishisetu/shared": "*",
     "@prisma/client": "^5.22.0",
     "@tanstack/react-query": "^5.62.0",
