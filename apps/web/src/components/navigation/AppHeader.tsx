@@ -78,19 +78,7 @@ export function AppHeader() {
           </span>
         </div>
 
-        {isDemoMode && (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={resetDemo}
-              disabled={isResetting}
-              className="flex items-center gap-1 text-neutral-600 hover:text-neutral-900 font-medium px-2 py-0.5 rounded border border-neutral-300 hover:bg-white transition-colors"
-            >
-              <RotateCcw className={`w-3 h-3 ${isResetting ? 'animate-spin' : ''}`} />
-              <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
-            </button>
-          </div>
-        )}
+
       </div>
 
       {/* Main floating pill navbar */}
@@ -315,14 +303,7 @@ export function AppHeader() {
             </div>
           ) : null}
 
-        {/* User location badge (authenticated only) */}
-        {isAuthenticated && user && (
-          <div className="hidden lg:flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-neutral-200 text-xs">
-            <span className="text-neutral-600 text-[11px] font-medium">
-              {user.district || user.village || 'Pune'}
-            </span>
-          </div>
-        )}
+
 
         {/* Auth Button: Logout if authenticated, Sign In if guest */}
         {user ? (

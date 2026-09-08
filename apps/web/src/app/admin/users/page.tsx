@@ -513,8 +513,8 @@ export default function AdminUsersPage() {
                     </td>
 
                     {/* Last Login */}
-                    <td className="px-5 py-4 text-neutral-500 text-[11px]">
-                      {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Never'}
+                    <td className="px-5 py-4 text-neutral-500 text-[11px]" suppressHydrationWarning>
+                      {u.lastLoginAt ? new Date(u.lastLoginAt).toISOString().split('T')[0] : 'Never'}
                     </td>
 
                     {/* Actions */}
@@ -799,8 +799,8 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500">Registration Date:</span>
-                    <span className="text-neutral-700">
-                      {new Date(selectedUser.createdAt).toLocaleDateString()}
+                    <span className="text-neutral-700" suppressHydrationWarning>
+                      {new Date(selectedUser.createdAt).toISOString().split('T')[0]}
                     </span>
                   </div>
                 </div>
@@ -820,8 +820,8 @@ export default function AdminUsersPage() {
                             <span className="font-bold text-neutral-900 text-[11px]">
                               {ev.action}
                             </span>
-                            <span className="text-[10px] text-neutral-400">
-                              {new Date(ev.timestamp || ev.createdAt).toLocaleString()}
+                            <span className="text-[10px] text-neutral-400" suppressHydrationWarning>
+                              {new Date(ev.timestamp || ev.createdAt).toISOString().replace('T', ' ').slice(0, 19)}
                             </span>
                           </div>
                           <span className="text-neutral-600 block text-[11px]">
