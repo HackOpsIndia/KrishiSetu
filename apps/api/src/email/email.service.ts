@@ -59,13 +59,17 @@ export class EmailService implements OnModuleInit {
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
 
     if (host && user && pass) {
+      const normalizedPass =
+        host.includes('gmail') && pass.includes(' ')
+          ? pass.replace(/\s+/g, '')
+          : pass.trim();
       this.isConfigured = true;
       try {
         this.transporter = nodemailer.createTransport({
           host,
           port,
           secure,
-          auth: { user, pass },
+          auth: { user, pass: normalizedPass },
           pool: true,
           maxConnections: 5,
         });
