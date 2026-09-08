@@ -250,12 +250,12 @@ export async function ensureDatabaseSchema(prisma: any): Promise<void> {
   isEnsuring = true;
 
   try {
-    // Check if core table exists
+    // Check if core table exists using information_schema (supported by Prisma queryRaw)
     const res: any[] = await prisma.$queryRawUnsafe(
-      `SELECT to_regclass('public.opportunity_records') AS table_exists;`
+      `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'opportunity_records') AS table_exists;`
     );
 
-    const exists = res && res[0] && res[0].table_exists !== null;
+    const exists = Boolean(res && res[0] && res[0].table_exists);
 
     if (!exists) {
       console.log('[ensureDatabaseSchema] Tables missing. Initializing database schema in Neon Postgres...');

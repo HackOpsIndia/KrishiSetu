@@ -66,6 +66,54 @@ export async function POST(req: NextRequest) {
     let buyerUser = await prisma.user.findFirst({ where: { role: 'BUYER' } }).catch(() => null);
     let farmerUser = await prisma.user.findFirst({ where: { role: 'FARMER' } }).catch(() => null);
 
+    if (!farmerUser) {
+      farmerUser = await prisma.user.create({
+        data: {
+          id: 'user-farmer-1',
+          email: 'ramesh.kumar@gmail.com',
+          name: 'Ramesh Kumar',
+          role: 'FARMER',
+        },
+      }).catch(() => prisma.user.findFirst({ where: { role: 'FARMER' } }));
+    }
+
+    if (!buyerUser) {
+      buyerUser = await prisma.user.create({
+        data: {
+          id: 'user-buyer-1',
+          email: 'freshmart.procure@gmail.com',
+          name: 'FreshMart Foods Ltd.',
+          role: 'BUYER',
+        },
+      }).catch(() => prisma.user.findFirst({ where: { role: 'BUYER' } }));
+    }
+
+    if (!lot && farmerUser) {
+      let profile = await prisma.farmerProfile.findUnique({ where: { userId: farmerUser.id } }).catch(() => null);
+      if (!profile) {
+        profile = await prisma.farmerProfile.create({
+          data: {
+            userId: farmerUser.id,
+            village: 'Talegaon Dabhade',
+            district: 'Pune',
+            state: 'Maharashtra',
+          },
+        }).catch(() => null);
+      }
+      if (profile) {
+        lot = await prisma.lot.create({
+          data: {
+            farmerId: profile.id,
+            commodityName: 'Tomato Hybrid',
+            varietyName: 'Abhinav Hybrid',
+            quantity: 18,
+            qualityGrade: 'Grade A',
+            status: 'READY',
+          },
+        }).catch(() => null);
+      }
+    }
+
     if (lot && buyerUser && farmerUser) {
       const created = await prisma.transaction.create({
         data: {
@@ -80,12 +128,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(created, { status: 201 });
     }
 
-    return NextResponse.json({
-      id: `TX-2026-${Date.now().toString().slice(-4)}`,
-      agreedPricePaise,
-      quantity,
-      status: 'CONFIRMED',
-    });
+    return NextResponse.json(
+      { error: 'Failed to find or create database references for transaction' },
+      { status: 500 },
+    );
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Failed to create transaction' }, { status: 500 });
   }
