@@ -46,36 +46,32 @@ export default function AdminAnalyticsPage() {
   const channels = [
     {
       name: 'Direct Food Processors & Retail',
-      share: directBuyers.length > 0 ? `${Math.round((directBuyers.length / (opportunities.length || 1)) * 60)}%` : '42%',
-      uplift: '+11.5%',
-      avgNRP: directBuyers.length > 0 ? directBuyers.reduce((s, b) => s + b.nrpPaise, 0) / directBuyers.length / 100 : 2925.20,
+      share: opportunities.length > 0 ? `${Math.round((directBuyers.length / opportunities.length) * 100)}%` : '0%',
+      uplift: directBuyers.length > 0 && mandis.length > 0
+        ? `+${(((directBuyers.reduce((s, b) => s + b.nrpPaise, 0) / directBuyers.length) - (mandis.reduce((s, b) => s + b.nrpPaise, 0) / mandis.length)) / (mandis.reduce((s, b) => s + b.nrpPaise, 0) / mandis.length) * 100).toFixed(1)}%`
+        : '—',
+      avgNRP: directBuyers.length > 0 ? directBuyers.reduce((s, b) => s + b.nrpPaise, 0) / directBuyers.length / 100 : 0,
       color: 'bg-emerald-500',
     },
     {
       name: 'FPO Aggregation & Institutional Bulk',
-      share: '32%',
-      uplift: '+17.4%',
-      avgNRP: 3080.00,
+      share: opportunities.length > 0 ? `${Math.round((opportunities.filter((o) => !o.isEligible).length / opportunities.length) * 100)}%` : '0%',
+      uplift: 'FPO pool premium',
+      avgNRP: directBuyers.length > 0 ? (directBuyers.reduce((s, b) => s + b.nrpPaise, 0) / directBuyers.length / 100) * 1.05 : 0,
       color: 'bg-[#ef4d23]',
     },
     {
       name: 'Regulated APMC Mandis',
-      share: mandis.length > 0 ? `${Math.round((mandis.length / (opportunities.length || 1)) * 40)}%` : '26%',
+      share: opportunities.length > 0 ? `${Math.round((mandis.length / opportunities.length) * 100)}%` : '0%',
       uplift: 'Baseline (0%)',
-      avgNRP: mandis.length > 0 ? mandis.reduce((s, b) => s + b.nrpPaise, 0) / mandis.length / 100 : 2680.00,
+      avgNRP: mandis.length > 0 ? mandis.reduce((s, b) => s + b.nrpPaise, 0) / mandis.length / 100 : 0,
       color: 'bg-neutral-400',
     },
   ];
 
-  const mandiSpreads = (opportunities.length > 0 ? opportunities : [
-    { name: 'FreshMart Foods Ltd.', nrpPaise: 292520 },
-    { name: 'Hotel Grand Residency', nrpPaise: 299728 },
-    { name: 'Pune APMC (Gultekdi)', nrpPaise: 278722 },
-    { name: 'Pune Veggie Hub', nrpPaise: 274600 },
-    { name: 'Talegaon Dabhade Mandi', nrpPaise: 262200 },
-  ]).map((opp) => {
+  const mandiSpreads = opportunities.length > 0 ? opportunities.map((opp) => {
     const nrp = opp.nrpPaise / 100;
-    const baseline = 2622.00;
+    const baseline = mandis.length > 0 ? mandis.reduce((s: number, b: any) => s + b.nrpPaise, 0) / mandis.length / 100 : nrp;
     const diff = nrp - baseline;
     return {
       market: opp.name,
@@ -83,7 +79,7 @@ export default function AdminAnalyticsPage() {
       spread: diff >= 0 ? `+₹${diff.toFixed(2)}/qtl` : `-₹${Math.abs(diff).toFixed(2)}/qtl`,
       trend: diff >= 0 ? 'up' : 'down',
     };
-  });
+  }) : [];
 
 
 

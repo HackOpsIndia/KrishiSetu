@@ -497,6 +497,40 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+// --- Grievances ---
+
+model Grievance {
+  id              String             @id @default(uuid())
+  raisedBy        String             // "FARMER" | "BUYER"
+  farmerUserId    String
+  buyerUserId     String
+  category        GrievanceCategory
+  title           String
+  lotId           String?
+  disputedAmount  Int                @default(0)
+  status          GrievanceStatus    @default(OPEN)
+  description     String
+  resolutionNote  String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status])
+  @@map("grievances")
+}
+
+enum GrievanceCategory {
+  WEIGHT_DISCREPANCY
+  QUALITY_DOWNGRADE
+  PAYMENT_DELAY
+  LOGISTICS_DAMAGE
+}
+
+enum GrievanceStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+}
+
 // --- Auth Challenges / OTP ---
 
 model AuthChallenge {

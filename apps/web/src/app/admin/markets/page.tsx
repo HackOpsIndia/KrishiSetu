@@ -25,17 +25,17 @@ export default function AdminMarketsPage() {
           opps.map((o) => ({
             id: `feed-${o.id}`,
             marketName: o.name,
-            district: o.location.split(',')[1]?.trim() || 'Pune',
-            commodity: 'Tomato Hybrid Grade A',
+            district: o.location.split(',')[1]?.trim() || o.location,
+            commodity: o.buyerType ? `${o.buyerType} Channel` : (o.channelType === 'MANDI_APMC' ? 'APMC Regulated Market' : 'Direct Buyer Channel'),
             modalPrice: Math.round(o.grossPricePaise / 100),
             minPrice: Math.round((o.grossPricePaise / 100) * 0.92),
             maxPrice: Math.round((o.grossPricePaise / 100) * 1.08),
-            dailyArrivalsQtl: o.channelType === 'MANDI_APMC' ? 450 : 280,
+            dailyArrivalsQtl: o.channelType === 'MANDI_APMC' ? Math.round(o.distanceKm * 12) : Math.round(o.distanceKm * 8),
             source: o.channelType === 'MANDI_APMC' ? 'Agmarknet API Mirror' : 'Direct Processor Feed',
             dataOrigin: 'DEMO' as 'DEMO' | 'GOVERNMENT_SOURCE' | 'MANUAL',
-            lastUpdated: '1 hour ago',
+            lastUpdated: o.updatedAt ? `${Math.round((Date.now() - new Date(o.updatedAt).getTime()) / 3600000)}h ago` : 'Recent',
             isStale: false,
-            confidenceScore: Math.round((o.trustScore || 0.9) * 100),
+            confidenceScore: Math.round((o.trustScore || 0.5) * 100),
           }))
         );
       } else {

@@ -36,13 +36,13 @@ export default function BuyerDashboard() {
         if (Array.isArray(lots)) {
           setIncomingSupplies(
             lots.map((l: any) => ({
-              farmer: l.farmerName || 'Ramesh Kumar',
-              village: l.village || 'Haveli Cluster Hub',
-              commodity: l.commodityName || 'Tomato Hybrid',
-              grade: l.qualityGrade || 'A',
-              quantityQtl: l.quantity || 18,
+              farmer: l.farmerName || 'Verified Farmer',
+              village: l.village || 'Cluster Hub',
+              commodity: l.commodityName || 'Agri Commodity',
+              grade: l.qualityGrade || 'Grade A',
+              quantityQtl: l.quantity || 0,
               status: l.status || 'Ready for Sourcing',
-              currentOffer: `₹${((l.minAcceptablePricePaise || 292500) / 100).toLocaleString('en-IN')}/qtl`,
+              currentOffer: l.minAcceptablePricePaise ? `₹${(l.minAcceptablePricePaise / 100).toLocaleString('en-IN')}/qtl` : 'Open Bid',
               href: '/buyer/offers',
             }))
           );

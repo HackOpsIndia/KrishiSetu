@@ -28,36 +28,48 @@ export async function GET() {
       }
     }
 
-    const formatted = txs.map((t) => ({
-      id: t.id,
-      txHash: `0x${t.id.slice(0, 8)}...${t.id.slice(-4)}`,
-      farmer: 'Ramesh Kumar',
-      farmerName: 'Ramesh Kumar',
-      buyer: 'FreshMart Foods Ltd.',
-      buyerName: 'FreshMart Foods Ltd.',
-      commodity: t.lot?.commodityName || 'Tomato Hybrid Grade A',
-      commodityName: t.lot?.commodityName || 'Tomato Hybrid Grade A',
-      quantityQtl: t.quantity,
-      quantity: t.quantity,
-      ratePerQtl: t.agreedPricePaise / 100,
-      agreedPricePaise: t.agreedPricePaise,
-      totalAmount: (t.agreedPricePaise * t.quantity) / 100,
-      payableAmountRupees: (t.agreedPricePaise * t.quantity) / 100,
-      escrowStatus: t.status === 'COMPLETED' ? 'SETTLED' : 'ESCROW_LOCKED',
-      status: t.status,
-      settlementTime: 'T+1 Escrow Settlement',
-      weighbridgeMatch: true,
-      date: new Date(t.createdAt).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      contractHash: `0x${t.id.slice(0, 8)}...${t.id.slice(-4)}`,
-      logisticsPartner: 'KrishiLogistics Direct',
-      driverName: 'Vinod Shinde',
-      eta: 'Today, 4:30 PM (Chakan Depot)',
-      settlementCycle: 'T+1 Escrow Settlement',
-    }));
+    // Resolve user names from DB
+    const userIds = new Set<string>();
+    for (const t of txs) {
+      if (t.farmerUserId) userIds.add(t.farmerUserId);
+      if (t.buyerUserId) userIds.add(t.buyerUserId);
+    }
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(userIds) } },
+      select: { id: true, name: true },
+    }).catch(() => []);
+    const userMap = new Map(users.map((u) => [u.id, u.name]));
+
+    const formatted = txs.map((t) => {
+      const farmerName = userMap.get(t.farmerUserId) || 'Farmer';
+      const buyerName = userMap.get(t.buyerUserId) || 'Buyer';
+      return {
+        id: t.id,
+        txHash: `0x${t.id.slice(0, 8)}...${t.id.slice(-4)}`,
+        farmer: farmerName,
+        farmerName: farmerName,
+        buyer: buyerName,
+        buyerName: buyerName,
+        commodity: t.lot?.commodityName || 'Unknown Commodity',
+        commodityName: t.lot?.commodityName || 'Unknown Commodity',
+        quantityQtl: t.quantity,
+        quantity: t.quantity,
+        ratePerQtl: t.agreedPricePaise / 100,
+        agreedPricePaise: t.agreedPricePaise,
+        totalAmount: (t.agreedPricePaise * t.quantity) / 100,
+        payableAmountRupees: (t.agreedPricePaise * t.quantity) / 100,
+        escrowStatus: t.status === 'COMPLETED' ? 'SETTLED' : 'ESCROW_LOCKED',
+        status: t.status,
+        settlementTime: 'T+1 Escrow Settlement',
+        weighbridgeMatch: true,
+        date: new Date(t.createdAt).toISOString().split('T')[0],
+        contractHash: `0x${t.id.slice(0, 8)}...${t.id.slice(-4)}`,
+        logisticsPartner: t.logistics?.vehicleType || 'KrishiLogistics Direct',
+        driverName: t.logistics?.driverPhone || 'Assigned on dispatch',
+        eta: t.logistics?.deliveryDate ? new Date(t.logistics.deliveryDate).toISOString().split('T')[0] : 'Pending schedule',
+        settlementCycle: 'T+1 Escrow Settlement',
+      };
+    });
 
     return NextResponse.json(formatted);
   } catch (err: any) {

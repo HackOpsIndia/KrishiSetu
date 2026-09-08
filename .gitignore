@@ -17,6 +17,8 @@ dist/
 .turbo/
 *.tsbuildinfo
 
+scratch/
+*.tmp
 .env*
 *.env*
 apps/api/.env*

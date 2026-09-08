@@ -176,6 +176,23 @@ class ApiClient {
     );
   }
 
+  // Admin Grievances
+  async getAdminGrievances() {
+    return this.request<any[]>('/api/admin/grievances');
+  }
+
+  async resolveGrievance(id: string, status: string, resolutionNote?: string) {
+    return this.request<{ success: boolean }>('/api/admin/grievances', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, status, resolutionNote }),
+    });
+  }
+
+  // Admin Dashboard Stats
+  async getAdminDashboardStats() {
+    return this.request<any>('/api/admin/dashboard/stats');
+  }
+
   // Profile
   async getProfile() {
     return this.request<any>('/api/users/me');

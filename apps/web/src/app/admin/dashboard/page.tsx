@@ -18,37 +18,56 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const opps = await api.getOpportunities();
-        if (Array.isArray(opps)) setOpportunities(opps);
-      } catch {}
+        setIsLoading(true);
+        const data = await api.getAdminDashboardStats();
+        setStats(data);
+      } catch (err) {
+        console.warn('Failed to load dashboard stats:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
     load();
   }, []);
 
-  const buyerCount = opportunities.filter((o) => o.channelType === 'DIRECT_BUYER').length || 48;
-
   const kpis = [
-    { label: 'Active Farmers', value: '1,420', sub: 'Across 14 Pune clusters', icon: Users, color: 'text-neutral-900' },
-    { label: 'Verified Buyers', value: String(buyerCount), sub: 'KYC & Escrow approved', icon: ShieldCheck, color: 'text-emerald-700' },
-    { label: 'Active Open Demand', value: '14,250 Qtl', sub: 'Tomato, Onion, Soybean', icon: TrendingUp, color: 'text-[#ef4d23]' },
-    { label: 'Average NRP Uplift', value: '+11.3%', sub: '+₹303/qtl over Mandis', icon: BarChart3, color: 'text-emerald-800' },
+    {
+      label: 'Active Farmers',
+      value: stats ? stats.users.farmers.toLocaleString('en-IN') : '—',
+      sub: stats ? `Across ${stats.users.total} total accounts` : 'Loading...',
+      icon: Users,
+      color: 'text-neutral-900',
+    },
+    {
+      label: 'Verified Buyers',
+      value: stats ? String(stats.users.buyers) : '—',
+      sub: 'KYC & Escrow approved',
+      icon: ShieldCheck,
+      color: 'text-emerald-700',
+    },
+    {
+      label: 'Active Open Demand',
+      value: stats ? `${stats.demands.totalQtl.toLocaleString('en-IN')} Qtl` : '—',
+      sub: stats?.lots.topCommodities || 'Loading...',
+      icon: TrendingUp,
+      color: 'text-[#ef4d23]',
+    },
+    {
+      label: 'Average NRP Uplift',
+      value: stats ? `+${stats.nrp.upliftPercent}%` : '—',
+      sub: stats ? `+₹${stats.nrp.upliftRupees}/qtl over Mandis` : 'Loading...',
+      icon: BarChart3,
+      color: 'text-emerald-800',
+    },
   ];
 
-  const pendingVerifications = opportunities
-    .filter((o) => o.channelType === 'DIRECT_BUYER')
-    .slice(0, 3)
-    .map((b) => ({
-      name: b.name,
-      type: b.buyerType || 'Agri Corporate Buyer',
-      trades: 28,
-      score: Math.round((b.trustScore || 0.9) * 100),
-      status: b.verificationLevel || 'PLATFORM_VERIFIED',
-    }));
+  const marketFeeds = stats?.marketFeeds || [];
 
   return (
     <AppShell
@@ -95,50 +114,54 @@ export default function AdminDashboard() {
 
         {/* GOVERNANCE & OVERSIGHT TWO-COLUMN CARDS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card 1: Buyer Verification Queue */}
+          {/* Card 1: Transaction Summary */}
           <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-neutral-900">Institutional Buyer Registry</h3>
-                  <p className="text-xs text-neutral-500">Corporate processors and bulk buyers requiring governance audit.</p>
+                  <h3 className="text-lg font-bold text-neutral-900">Transaction Overview</h3>
+                  <p className="text-xs text-neutral-500">Platform-wide escrow transaction summary from database.</p>
                 </div>
-                <Link href="/admin/buyers" className="text-xs text-[#ef4d23] font-semibold hover:underline">
+                <Link href="/admin/transactions" className="text-xs text-[#ef4d23] font-semibold hover:underline">
                   View All →
                 </Link>
               </div>
 
               <div className="space-y-3">
-                {pendingVerifications.map((buyer, idx) => (
-                  <div key={idx} className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between text-xs">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-neutral-900">{buyer.name}</span>
-                        <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-neutral-200 text-neutral-600 font-medium">
-                          {buyer.type}
-                        </span>
-                      </div>
-                      <span className="text-neutral-500 mt-0.5 block">
-                        Trust Score: <strong>{buyer.score}/100</strong> • {buyer.trades} successful trades
-                      </span>
-                    </div>
-
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      buyer.status === 'PLATFORM_VERIFIED'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-900'
-                    }`}>
-                      {buyer.status === 'PLATFORM_VERIFIED' ? 'Verified' : 'Under Review'}
-                    </span>
+                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-neutral-900">Total Transactions</span>
+                    <span className="text-neutral-500 block mt-0.5">{stats?.transactions.count || 0} contracts recorded</span>
                   </div>
-                ))}
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                    {stats?.transactions.completed || 0} Completed
+                  </span>
+                </div>
+                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-neutral-900">Active Lots</span>
+                    <span className="text-neutral-500 block mt-0.5">{stats?.lots.count || 0} lots ({stats?.lots.totalQtl || 0} Qtl total)</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">
+                    {stats?.lots.activeQtl || 0} Qtl Active
+                  </span>
+                </div>
+                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-neutral-900">Grievance Status</span>
+                    <span className="text-neutral-500 block mt-0.5">{stats?.grievances.open || 0} open • {stats?.grievances.underReview || 0} under review</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                    {stats?.grievances.resolved || 0} Resolved
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="mt-5 pt-3 border-t border-neutral-100 text-xs text-neutral-500 flex justify-between items-center">
-              <span>All corporate accounts undergo KYC &amp; bank escrow verification.</span>
-              <Link href="/admin/buyers" className="text-neutral-800 font-semibold hover:underline">
-                Review Registry →
+              <span>All contracts undergo KYC &amp; bank escrow verification.</span>
+              <Link href="/admin/transactions" className="text-neutral-800 font-semibold hover:underline">
+                Audit Contracts →
               </Link>
             </div>
           </div>
@@ -149,7 +172,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-neutral-900">Mandi Price Feed Integrity</h3>
-                  <p className="text-xs text-neutral-500">Government APMC feeds vs. synthetic demo market data.</p>
+                  <p className="text-xs text-neutral-500">Market price data from PostgreSQL database.</p>
                 </div>
                 <Link href="/admin/markets" className="text-xs text-[#ef4d23] font-semibold hover:underline">
                   Manage Feeds →
@@ -157,44 +180,30 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-3">
-                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 text-xs space-y-1">
-                  <div className="flex justify-between font-semibold">
-                    <span>Pune APMC (Gultekdi)</span>
-                    <span className="text-emerald-700">Fresh (&lt; 2h ago)</span>
+                {marketFeeds.length > 0 ? marketFeeds.map((feed: any, idx: number) => (
+                  <div key={idx} className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 text-xs space-y-1">
+                    <div className="flex justify-between font-semibold">
+                      <span>{feed.marketName}</span>
+                      <span className="text-emerald-700">
+                        {feed.hoursAgo <= 24 ? `Fresh (${feed.hoursAgo}h ago)` : `Stale (${feed.hoursAgo}h)`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-neutral-500 text-[11px]">
+                      <span>Source: {feed.source} • {feed.district}</span>
+                      <span>Modal: ₹{feed.modalPrice.toLocaleString('en-IN')}/qtl</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-neutral-500 text-[11px]">
-                    <span>Source: Agmarknet API / Demo Mirror</span>
-                    <span>Modal: ₹3,100/qtl</span>
+                )) : (
+                  <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 text-xs text-neutral-500 text-center">
+                    {isLoading ? 'Loading market feeds...' : 'No market price data in database yet.'}
                   </div>
-                </div>
-
-                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 text-xs space-y-1">
-                  <div className="flex justify-between font-semibold">
-                    <span>Talegaon Dabhade Mandi</span>
-                    <span className="text-emerald-700">Fresh (&lt; 4h ago)</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-500 text-[11px]">
-                    <span>Source: State Agricultural Board / Demo Mirror</span>
-                    <span>Modal: ₹2,900/qtl</span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-200 text-xs space-y-1">
-                  <div className="flex justify-between font-semibold">
-                    <span>Nashik Tomato Hub</span>
-                    <span className="text-emerald-700">Fresh (&lt; 1h ago)</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-500 text-[11px]">
-                    <span>Source: Direct Exporter Cargo Feed</span>
-                    <span>Modal: ₹3,200/qtl</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
             <div className="mt-5 pt-3 border-t border-neutral-100 text-xs text-emerald-800 font-semibold flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Zero stale data warnings. All 7 monitored markets synced within 24 hours.</span>
+              <span>All data sourced from PostgreSQL database.</span>
             </div>
           </div>
         </div>
@@ -231,7 +240,9 @@ export default function AdminDashboard() {
           >
             <div>
               <span className="font-bold text-neutral-900 block text-sm">Grievance Center</span>
-              <span className="text-neutral-500 text-[11px]">1 open inquiry • 98% resolution rate</span>
+              <span className="text-neutral-500 text-[11px]">
+                {stats ? `${stats.grievances.open} open • ${stats.grievances.resolved} resolved` : 'Loading...'}
+              </span>
             </div>
             <ArrowRight className="w-4 h-4 text-neutral-400" />
           </Link>

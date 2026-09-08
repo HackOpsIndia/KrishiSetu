@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppShell } from '../../../components/navigation/AppShell';
+import { api } from '../../../lib/api';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -40,90 +41,22 @@ export default function AdminGrievancesPage() {
   const [tickets, setTickets] = useState<GrievanceTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Seed realistic demo grievance data on mount
-  useEffect(() => {
-    const seedGrievances: GrievanceTicket[] = [
-      {
-        id: 'GRV-2024-001',
-        raisedBy: 'FARMER',
-        farmerName: 'Ramesh Kumar',
-        buyerName: 'FreshMart Foods',
-        category: 'WEIGHT_DISCREPANCY',
-        title: 'Weighbridge discrepancy: 2.3 qtl shortage on Wheat delivery',
-        lotId: 'LOT-0042',
-        disputedAmount: 5764,
-        status: 'OPEN',
-        createdAt: '2024-12-18',
-        description:
-          'Farmer recorded 24.5 qtl at origin weighbridge but buyer claims 22.2 qtl at destination. Electronic weighbridge log attached. Requesting escrow hold and re-inspection.',
-      },
-      {
-        id: 'GRV-2024-002',
-        raisedBy: 'FARMER',
-        farmerName: 'Sita Devi',
-        buyerName: 'AgriPro Industries',
-        category: 'QUALITY_DOWNGRADE',
-        title: 'AI-graded A-grade Rice downgraded to B by buyer',
-        lotId: 'LOT-0087',
-        disputedAmount: 6000,
-        status: 'UNDER_REVIEW',
-        createdAt: '2024-12-17',
-        description:
-          'Platform AI quality engine graded lot as Grade-A (moisture 12.8%, FN 315). Buyer re-graded as B citing higher broken grain %. Photo evidence and AI report attached for conciliation.',
-      },
-      {
-        id: 'GRV-2024-003',
-        raisedBy: 'BUYER',
-        farmerName: 'Manoj Patel',
-        buyerName: 'Metro Wholesale',
-        category: 'PAYMENT_DELAY',
-        title: 'Payment released but not received in farmer UPI account',
-        lotId: 'LOT-0063',
-        disputedAmount: 0,
-        status: 'RESOLVED',
-        createdAt: '2024-12-15',
-        description:
-          'Buyer released payment via escrow, but farmer reports UPI credit not received after 48 hours. Bank reconciliation confirmed delay due to NPCI settlement queue.',
-        resolutionNote:
-          'Payment confirmed credited after NPCI settlement cycle. Verified via bank statement upload. Case closed with no further action required.',
-      },
-      {
-        id: 'GRV-2024-004',
-        raisedBy: 'FARMER',
-        farmerName: 'Gita Sharma',
-        buyerName: 'Organic Valley Co.',
-        category: 'LOGISTICS_DAMAGE',
-        title: 'Mustard consignment damaged during transit — wet tarpaulin',
-        lotId: 'LOT-0101',
-        disputedAmount: 0,
-        status: 'OPEN',
-        createdAt: '2024-12-19',
-        description:
-          'Farmer alleges that 3.5 qtl mustard was damaged due to rain exposure during transit. Logistics partner used insufficient tarpaulin cover. Photo evidence of wet gunny bags attached.',
-      },
-      {
-        id: 'GRV-2024-005',
-        raisedBy: 'BUYER',
-        farmerName: 'Vikram Singh',
-        buyerName: 'Spice Hub Exports',
-        category: 'QUALITY_DOWNGRADE',
-        title: 'Turmeric curcumin content below agreed specification',
-        lotId: 'LOT-0122',
-        disputedAmount: 0,
-        status: 'RESOLVED',
-        createdAt: '2024-12-10',
-        description:
-          'Buyer lab test shows curcumin at 2.8% vs agreed 3.5% minimum. AI grading was based on visual assessment only. Requesting partial refund from escrow.',
-        resolutionNote:
-          'Mutually conciliated 50/50 settlement. ₹4,200 released to buyer, remaining escrow released to farmer. Both parties accepted digital lab report.',
-      },
-    ];
-    // Simulate API fetch delay
-    const timer = setTimeout(() => {
-      setTickets(seedGrievances);
+  const fetchGrievances = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getAdminGrievances();
+      if (Array.isArray(data)) {
+        setTickets(data);
+      }
+    } catch (err) {
+      console.warn('Failed to load grievances from DB:', err);
+    } finally {
       setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    fetchGrievances();
   }, []);
 
   const filteredTickets = tickets.filter((t) => {
@@ -140,7 +73,10 @@ export default function AdminGrievancesPage() {
     return true;
   });
 
-  const handleResolveTicket = (ticketId: string, resolution: string) => {
+  const handleResolveTicket = async (ticketId: string, resolution: string) => {
+    try {
+      await api.resolveGrievance(ticketId, 'RESOLVED', resolution);
+    } catch {}
     setTickets((prev) =>
       prev.map((t) =>
         t.id === ticketId

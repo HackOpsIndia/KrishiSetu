@@ -29,6 +29,7 @@ async function main() {
 
   await (prisma as any).opportunityRecord.deleteMany();
   await prisma.auditEvent.deleteMany();
+  await (prisma as any).grievance.deleteMany().catch(() => {});
   await prisma.payment.deleteMany();
   await prisma.logisticsBooking.deleteMany();
   await prisma.transactionEvent.deleteMany();
@@ -439,6 +440,88 @@ async function main() {
       details: { seededAt: new Date().toISOString(), version: '1.0.0' },
     },
   });
+
+  // --- Demo Transaction ---
+  const firstBuyerKey = Object.keys(buyerProfiles)[0];
+  const firstBuyer = buyerProfiles[firstBuyerKey];
+  if (lot && firstBuyer) {
+    await prisma.transaction.create({
+      data: {
+        lotId: lot.id,
+        buyerUserId: firstBuyer.user.id,
+        farmerUserId: farmerUser.id,
+        agreedPricePaise: 297500,
+        quantity: DEMO_LOT.quantity,
+        status: 'CONFIRMED',
+      },
+    });
+    console.log('  ✓ Demo transaction seeded');
+  }
+
+  // --- Grievances ---
+  const buyerKeys = Object.keys(buyerProfiles);
+  const grievanceData = [
+    {
+      raisedBy: 'FARMER',
+      farmerUserId: farmerUser.id,
+      buyerUserId: buyerProfiles[buyerKeys[0]]?.user.id || farmerUser.id,
+      category: 'WEIGHT_DISCREPANCY' as const,
+      title: 'Weighbridge discrepancy: 2.3 qtl shortage on Wheat delivery',
+      lotId: lot.id,
+      disputedAmount: 576400,
+      status: 'OPEN' as const,
+      description: 'Farmer recorded 24.5 qtl at origin weighbridge but buyer claims 22.2 qtl at destination. Electronic weighbridge log attached. Requesting escrow hold and re-inspection.',
+    },
+    {
+      raisedBy: 'FARMER',
+      farmerUserId: fpoFarmerProfiles[0]?.profile ? (await prisma.farmerProfile.findUnique({ where: { id: fpoFarmerProfiles[0].profile.id } }).then(p => p?.userId || farmerUser.id)) : farmerUser.id,
+      buyerUserId: buyerProfiles[buyerKeys[1]]?.user.id || buyerProfiles[buyerKeys[0]]?.user.id || farmerUser.id,
+      category: 'QUALITY_DOWNGRADE' as const,
+      title: 'AI-graded A-grade Rice downgraded to B by buyer',
+      disputedAmount: 600000,
+      status: 'UNDER_REVIEW' as const,
+      description: 'Platform AI quality engine graded lot as Grade-A (moisture 12.8%, FN 315). Buyer re-graded as B citing higher broken grain %. Photo evidence and AI report attached for conciliation.',
+    },
+    {
+      raisedBy: 'BUYER',
+      farmerUserId: farmerUser.id,
+      buyerUserId: buyerProfiles[buyerKeys[2]]?.user.id || buyerProfiles[buyerKeys[0]]?.user.id || farmerUser.id,
+      category: 'PAYMENT_DELAY' as const,
+      title: 'Payment released but not received in farmer UPI account',
+      disputedAmount: 0,
+      status: 'RESOLVED' as const,
+      description: 'Buyer released payment via escrow, but farmer reports UPI credit not received after 48 hours. Bank reconciliation confirmed delay due to NPCI settlement queue.',
+      resolutionNote: 'Payment confirmed credited after NPCI settlement cycle. Verified via bank statement upload. Case closed with no further action required.',
+    },
+    {
+      raisedBy: 'FARMER',
+      farmerUserId: fpoFarmerProfiles[1]?.profile ? (await prisma.farmerProfile.findUnique({ where: { id: fpoFarmerProfiles[1].profile.id } }).then(p => p?.userId || farmerUser.id)) : farmerUser.id,
+      buyerUserId: buyerProfiles[buyerKeys[0]]?.user.id || farmerUser.id,
+      category: 'LOGISTICS_DAMAGE' as const,
+      title: 'Mustard consignment damaged during transit — wet tarpaulin',
+      disputedAmount: 0,
+      status: 'OPEN' as const,
+      description: 'Farmer alleges that 3.5 qtl mustard was damaged due to rain exposure during transit. Logistics partner used insufficient tarpaulin cover. Photo evidence of wet gunny bags attached.',
+    },
+    {
+      raisedBy: 'BUYER',
+      farmerUserId: farmerUser.id,
+      buyerUserId: buyerProfiles[buyerKeys[3]]?.user.id || buyerProfiles[buyerKeys[0]]?.user.id || farmerUser.id,
+      category: 'QUALITY_DOWNGRADE' as const,
+      title: 'Turmeric curcumin content below agreed specification',
+      disputedAmount: 0,
+      status: 'RESOLVED' as const,
+      description: 'Buyer lab test shows curcumin at 2.8% vs agreed 3.5% minimum. AI grading was based on visual assessment only. Requesting partial refund from escrow.',
+      resolutionNote: 'Mutually conciliated 50/50 settlement. ₹4,200 released to buyer, remaining escrow released to farmer. Both parties accepted digital lab report.',
+    },
+  ];
+
+  for (const g of grievanceData) {
+    await (prisma as any).grievance.create({ data: g }).catch((e: any) => {
+      console.warn('  ⚠ Grievance seed skipped:', e?.message?.slice(0, 60));
+    });
+  }
+  console.log('  ✓ Grievances seeded');
 
   console.log('\n🌾 Demo seed complete!');
   console.log(`   Farmer: ${DEMO_ACCOUNTS.farmer.email} / ${DEMO_ACCOUNTS.farmer.password}`);
