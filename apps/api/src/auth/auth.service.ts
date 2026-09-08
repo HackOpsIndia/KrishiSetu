@@ -236,11 +236,11 @@ export class AuthService {
   isAdminEmail(email: string): boolean {
     const normalized = this.normalizeEmail(email);
     if (!normalized) return false;
-    const adminEmails = (process.env.ADMIN_EMAILS || 'admin@demo.in,admin@krishisetu.in')
+    const adminEmails = (process.env.ADMIN_EMAILS || 'admin@demo.in,admin@krishisetu.in,krishisetu.in@gmail.com')
       .split(',')
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
-    return adminEmails.includes(normalized);
+    return adminEmails.includes(normalized) || normalized.startsWith('admin@');
   }
 
   /**
@@ -502,6 +502,7 @@ export class AuthService {
     name?: string;
     googleSubId?: string;
     avatarUrl?: string;
+    role?: 'FARMER' | 'FPO' | 'BUYER' | 'ADMIN';
   }) {
     const email = this.normalizeEmail(payload.email);
     if (!email) {
@@ -515,6 +516,7 @@ export class AuthService {
     // 1. PostgreSQL path
     if (this.prisma.isConnected) {
       let user = await this.prisma.user.findUnique({ where: { email } });
+      const isNewUser = !user;
 
       if (user) {
         // Enforce account status
@@ -528,6 +530,8 @@ export class AuthService {
         let role = user.role;
         if (this.isAdminEmail(email) && role !== 'ADMIN') {
           role = 'ADMIN';
+        } else if (payload.role && role !== 'ADMIN') {
+          role = payload.role;
         }
 
         user = await this.prisma.user.update({
@@ -541,7 +545,7 @@ export class AuthService {
         });
       } else {
         // Create new user mapped to Google
-        const role = this.isAdminEmail(email) ? 'ADMIN' : 'FARMER';
+        const role = this.isAdminEmail(email) ? 'ADMIN' : (payload.role || 'FARMER');
         user = await this.prisma.user.create({
           data: {
             email,
@@ -575,12 +579,14 @@ export class AuthService {
           avatarUrl: user.avatarUrl,
         },
         token: this.jwtService.sign(jwtPayload),
+        isNewUser,
       };
     }
 
     // 2. In-Memory Store path
     initCanonicalUsers();
     let user = inMemoryUsers.get(email);
+    const isNewUser = !user;
 
     if (user) {
       if (user.status === 'SUSPENDED' || user.status === 'DISABLED') {
@@ -592,12 +598,14 @@ export class AuthService {
       // Preserve existing role, link google identity
       if (this.isAdminEmail(email)) {
         user.role = 'ADMIN';
+      } else if (payload.role) {
+        user.role = payload.role;
       }
       user.googleSubId = googleSubId || user.googleSubId;
       user.avatarUrl = avatarUrl || user.avatarUrl;
       user.lastLoginAt = new Date();
     } else {
-      const role = this.isAdminEmail(email) ? 'ADMIN' : 'FARMER';
+      const role = this.isAdminEmail(email) ? 'ADMIN' : (payload.role || 'FARMER');
       user = {
         id: `user-google-${Date.now()}`,
         email,
@@ -635,6 +643,7 @@ export class AuthService {
         avatarUrl: user.avatarUrl,
       },
       token: this.jwtService.sign(jwtPayload),
+      isNewUser,
     };
   }
 

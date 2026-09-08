@@ -7,3 +7,4 @@ export * from './engines/trust-engine';
 export * from './engines/aggregation-engine';
 export * from './engines/buyer-matching-engine';
 export * from './engines/impact-engine';
+export * from './env-guard';

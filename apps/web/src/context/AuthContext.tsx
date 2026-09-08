@@ -77,6 +77,25 @@ const CANONICAL_USERS: Record<UserRole, UserProfile> = {
   },
 };
 
+function getStoredUsers(): Record<string, UserProfile> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem('krishisetu_registered_users');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredUser(profile: UserProfile) {
+  if (typeof window === 'undefined' || !profile.email) return;
+  try {
+    const users = getStoredUsers();
+    users[profile.email.toLowerCase().trim()] = profile;
+    localStorage.setItem('krishisetu_registered_users', JSON.stringify(users));
+  } catch {}
+}
+
 interface AuthContextType {
   user: UserProfile | null;
   role: UserRole;
@@ -84,8 +103,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setRole: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  getExistingAccount: (email: string) => UserProfile | null;
   loginWithPassword: (email: string, pass: string) => Promise<any>;
-  loginWithGoogle: (payload: { email: string; name?: string; avatarUrl?: string; idToken?: string }) => Promise<any>;
+  loginWithGoogle: (payload: {
+    email: string;
+    name?: string;
+    avatarUrl?: string;
+    idToken?: string;
+    role?: UserRole;
+  }) => Promise<any>;
   requestOtp: (email: string, purpose?: string) => Promise<any>;
   verifyOtp: (email: string, otp: string, purpose?: string) => Promise<any>;
   forgotPassword: (email: string) => Promise<any>;
@@ -146,7 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check backend auth config for production vs demo mode
     api.getAuthConfig().then((cfg) => {
       if (cfg && typeof cfg.demoMode === 'boolean') {
-        // Never force demo mode on production domain
         setIsDemoMode(envDemo ? cfg.demoMode : false);
       }
     }).catch(() => {
@@ -154,15 +180,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const getExistingAccount = (rawEmail: string): UserProfile | null => {
+    const norm = (rawEmail || '').toLowerCase().trim();
+    if (!norm) return null;
+    const stored = getStoredUsers();
+    if (stored[norm]) return stored[norm];
+    const canonical = Object.values(CANONICAL_USERS).find((c) => c.email.toLowerCase() === norm);
+    return canonical || null;
+  };
+
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    if (!user) return;
+    const updated: UserProfile = { ...user, ...updates };
+    setUser(updated);
+    saveStoredUser(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('krishisetu_user', JSON.stringify(updated));
+      if (updated.role) {
+        localStorage.setItem('krishisetu_active_role', updated.role);
+        setRoleState(updated.role);
+      }
+    }
+  };
+
   const switchRole = async (newRole: UserRole) => {
     setRoleState(newRole);
-    const newUser = CANONICAL_USERS[newRole];
+
+    // If current user is a real user (Google OAuth, Email, or non-demo canonical):
+    const isCustomUser = user && (user.authProvider === 'GOOGLE' || user.authProvider === 'EMAIL' || !isDemoEnvironment());
+
+    if (isCustomUser && user) {
+      const updatedUser: UserProfile = {
+        ...user,
+        role: newRole,
+        companyName: newRole === 'BUYER' ? (user.companyName || `${user.name} Procurement`) : user.companyName,
+        buyerType: newRole === 'BUYER' ? (user.buyerType || 'Wholesale Buyer') : user.buyerType,
+      };
+      setUser(updatedUser);
+      saveStoredUser(updatedUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('krishisetu_active_role', newRole);
+        localStorage.setItem('krishisetu_user', JSON.stringify(updatedUser));
+      }
+      try {
+        await api.updateUserRole(updatedUser.id, newRole, 'Self-service profile switch');
+      } catch {
+        // In-memory fallback
+      }
+      return;
+    }
+
+    // Pure canonical demo persona switch
+    const newUser = CANONICAL_USERS[newRole] || CANONICAL_USERS.FARMER;
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem('krishisetu_active_role', newRole);
       localStorage.setItem('krishisetu_user', JSON.stringify(newUser));
     }
-    // Attempt login to acquire valid backend JWT token for the selected demo role
     try {
       const res = await api.login(newUser.email, 'demo1234');
       setToken(res.token);
@@ -178,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.user);
         setRoleState(res.user.role);
         setToken(res.token);
+        saveStoredUser(res.user);
       }
       return res;
     } catch (err: any) {
@@ -197,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { user: matchedCanonical, token: fallbackToken };
       }
 
-      const isAdmin = normEmail === 'admin@demo.in' || normEmail === 'admin@krishisetu.in';
+      const isAdmin = normEmail === 'admin@demo.in' || normEmail === 'admin@krishisetu.in' || normEmail === 'krishisetu.in@gmail.com' || normEmail.startsWith('admin@');
       const isBuyer = normEmail.includes('buyer') || normEmail.includes('freshmart');
       const role: UserRole = isAdmin ? 'ADMIN' : (isBuyer ? 'BUYER' : 'FARMER');
 
@@ -215,6 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(fallbackUser);
       setRoleState(role);
       setToken(fallbackToken);
+      saveStoredUser(fallbackUser);
       if (typeof window !== 'undefined') {
         localStorage.setItem('krishisetu_user', JSON.stringify(fallbackUser));
         localStorage.setItem('krishisetu_token', fallbackToken);
@@ -224,44 +300,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (payload: { email: string; name?: string; avatarUrl?: string; idToken?: string }) => {
+  const loginWithGoogle = async (payload: {
+    email: string;
+    name?: string;
+    avatarUrl?: string;
+    idToken?: string;
+    role?: UserRole;
+  }) => {
+    const targetEmail = (payload.email || '').toLowerCase().trim();
+    const isAdmin =
+      targetEmail === 'admin@demo.in' ||
+      targetEmail === 'admin@krishisetu.in' ||
+      targetEmail === 'krishisetu.in@gmail.com' ||
+      targetEmail.startsWith('admin@');
+
+    // Check existing stored user if role not explicitly passed
+    const existing = getExistingAccount(targetEmail);
+    const resolvedRole: UserRole = isAdmin
+      ? 'ADMIN'
+      : (payload.role || (existing?.role ? existing.role : (targetEmail.includes('buyer') || targetEmail.includes('freshmart') ? 'BUYER' : 'FARMER')));
+
     try {
-      const res = await api.loginWithGoogle(payload);
+      const res = await api.loginWithGoogle({ ...payload, role: resolvedRole });
       if (res?.user) {
-        setUser(res.user);
-        setRoleState(res.user.role);
+        const finalUser: UserProfile = {
+          ...res.user,
+          role: isAdmin ? 'ADMIN' : (payload.role || res.user.role || resolvedRole),
+        };
+        setUser(finalUser);
+        setRoleState(finalUser.role);
         setToken(res.token);
+        saveStoredUser(finalUser);
+        return { ...res, user: finalUser, isNewUser: res.isNewUser ?? !existing };
       }
       return res;
     } catch (err: any) {
       console.warn('[AuthContext] Backend google login failed, applying resilient Google session:', err?.message);
-      const targetEmail = (payload.email || 'meena.d@demo.in').toLowerCase().trim();
-      const isAdmin = targetEmail === 'admin@demo.in' || targetEmail === 'admin@krishisetu.in';
-      const isBuyer = targetEmail.includes('buyer') || targetEmail.includes('freshmart');
-      const role: UserRole = isAdmin ? 'ADMIN' : (isBuyer ? 'BUYER' : 'FARMER');
 
       const fallbackUser: UserProfile = {
-        id: `google-${Date.now()}`,
-        name: payload.name || targetEmail.split('@')[0],
+        id: existing?.id || `google-${Date.now()}`,
+        name: payload.name || existing?.name || targetEmail.split('@')[0],
         email: targetEmail,
-        role,
+        role: resolvedRole,
         status: 'ACTIVE',
         authProvider: 'GOOGLE',
-        avatarUrl: payload.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
-        village: 'Haveli Cluster',
-        district: 'Pune',
-        state: 'Maharashtra',
+        avatarUrl: payload.avatarUrl || existing?.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
+        village: existing?.village || (resolvedRole === 'FARMER' ? 'Haveli Cluster' : undefined),
+        district: existing?.district || 'Pune',
+        state: existing?.state || 'Maharashtra',
+        companyName: resolvedRole === 'BUYER' ? (existing?.companyName || `${payload.name || targetEmail.split('@')[0]} Procurement`) : undefined,
+        buyerType: resolvedRole === 'BUYER' ? (existing?.buyerType || 'Wholesale Buyer') : undefined,
       };
       const fallbackToken = `google-jwt-${Date.now()}`;
       setUser(fallbackUser);
-      setRoleState(role);
+      setRoleState(resolvedRole);
       setToken(fallbackToken);
+      saveStoredUser(fallbackUser);
       if (typeof window !== 'undefined') {
         localStorage.setItem('krishisetu_user', JSON.stringify(fallbackUser));
         localStorage.setItem('krishisetu_token', fallbackToken);
-        localStorage.setItem('krishisetu_active_role', role);
+        localStorage.setItem('krishisetu_active_role', resolvedRole);
       }
-      return { user: fallbackUser, token: fallbackToken };
+      return { user: fallbackUser, token: fallbackToken, isNewUser: !existing };
     }
   };
 
@@ -389,6 +489,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         setRole: switchRole,
         switchRole,
+        updateUserProfile,
+        getExistingAccount,
         loginWithPassword,
         loginWithGoogle,
         requestOtp,

@@ -57,7 +57,8 @@ class ApiClient {
     }
 
     try {
-      const res = await fetch(`${API_BASE}${path}`, {
+      const targetUrl = API_BASE ? `${API_BASE}${path}` : path;
+      const res = await fetch(targetUrl, {
         ...options,
         headers,
       });
@@ -69,6 +70,17 @@ class ApiClient {
 
       return res.json();
     } catch (err: any) {
+      // If localhost:4000 is unreachable, try relative Next.js API route if running in browser
+      if (API_BASE && typeof window !== 'undefined' && (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError')) {
+        try {
+          const fallbackRes = await fetch(path, { ...options, headers });
+          if (fallbackRes.ok) {
+            return fallbackRes.json();
+          }
+        } catch {
+          // keep original error
+        }
+      }
       console.warn(`[ApiClient] Request to ${path} failed:`, err.message);
       throw err;
     }
@@ -263,8 +275,8 @@ class ApiClient {
   }
 
   // Google OAuth
-  async loginWithGoogle(payload: { email: string; name?: string; avatarUrl?: string; idToken?: string }) {
-    const result = await this.request<{ user: any; token: string }>('/api/auth/google/verify', {
+  async loginWithGoogle(payload: { email: string; name?: string; avatarUrl?: string; idToken?: string; role?: string }) {
+    const result = await this.request<{ user: any; token: string; isNewUser?: boolean; isAdmin?: boolean }>('/api/auth/google/verify', {
       method: 'POST',
       body: JSON.stringify(payload),
     });

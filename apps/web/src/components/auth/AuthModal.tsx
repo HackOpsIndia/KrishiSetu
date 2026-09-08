@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useAuth, UserRole } from '../../context/AuthContext';
 import {
   X,
   Mail,
@@ -16,9 +17,12 @@ import {
   KeyRound,
   Sprout,
   Building2,
+  ArrowLeft,
+  UserCheck,
 } from 'lucide-react';
 
 export function AuthModal() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -31,6 +35,7 @@ export function AuthModal() {
     isDemoMode,
     loginWithPassword,
     loginWithGoogle,
+    getExistingAccount,
     requestOtp,
     verifyOtp,
     forgotPassword,
@@ -47,6 +52,16 @@ export function AuthModal() {
   const [newPassword, setNewPassword] = useState('');
 
   // States
+  const [step, setStep] = useState<'AUTH' | 'ROLE_SELECTION'>('AUTH');
+  const [googleEmailInput, setGoogleEmailInput] = useState('');
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<{
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  } | null>(null);
+  const [chosenRole, setChosenRole] = useState<'FARMER' | 'BUYER'>('FARMER');
+  const [companyName, setCompanyName] = useState('');
+
   const [otpStep, setOtpStep] = useState<'EMAIL' | 'CODE'>('EMAIL');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -158,29 +173,107 @@ export function AuthModal() {
   const handleGoogleLogin = async (googleEmail?: string) => {
     setLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
     try {
-      const targetEmail = googleEmail || email || 'krishisetu.in@gmail.com';
-      const name =
-        targetEmail === 'krishisetu.in@gmail.com'
-          ? 'KrishiSetu Admin'
-          : targetEmail.split('@')[0];
+      const targetEmail = (googleEmail || googleEmailInput || email || '').trim().toLowerCase();
+      if (!targetEmail || !targetEmail.includes('@')) {
+        setErrorMessage('Please enter a valid Google account email address.');
+        setLoading(false);
+        return;
+      }
 
-      await loginWithGoogle({
+      const rawName = targetEmail.split('@')[0];
+      const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+      const avatarUrl = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80';
+
+      const isAdmin =
+        targetEmail === 'admin@demo.in' ||
+        targetEmail === 'admin@krishisetu.in' ||
+        targetEmail === 'krishisetu.in@gmail.com' ||
+        targetEmail.startsWith('admin@');
+
+      if (isAdmin) {
+        await loginWithGoogle({
+          email: targetEmail,
+          name: `${name} (Admin)`,
+          avatarUrl,
+          role: 'ADMIN',
+        });
+        setSuccessMessage(`Admin authenticated: ${targetEmail}. Redirecting to Governance...`);
+        setTimeout(() => {
+          closeAuthModal();
+          router.push('/admin/dashboard');
+        }, 600);
+        return;
+      }
+
+      // Check if this account was already registered with a role
+      const existing = getExistingAccount(targetEmail);
+      if (existing && existing.role && existing.role !== 'ADMIN') {
+        await loginWithGoogle({
+          email: targetEmail,
+          name: existing.name || name,
+          avatarUrl: existing.avatarUrl || avatarUrl,
+          role: existing.role,
+        });
+        setSuccessMessage(`Welcome back! Logged in as ${existing.role === 'BUYER' ? 'Buyer' : 'Seller'}.`);
+        setTimeout(() => {
+          closeAuthModal();
+          if (existing.role === 'BUYER') {
+            router.push('/buyer/dashboard');
+          } else {
+            router.push('/dashboard');
+          }
+        }, 600);
+        return;
+      }
+
+      // If NEW user (or unassigned role): Ask if Buyer or Seller!
+      setPendingGoogleUser({
         email: targetEmail,
-        name: `${name} (Google)`,
-        avatarUrl:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
+        name,
+        avatarUrl,
       });
-      setSuccessMessage(`Google account linked: ${targetEmail}`);
-      setTimeout(() => {
-        closeAuthModal();
-      }, 600);
+      setChosenRole(targetEmail.includes('buyer') || targetEmail.includes('freshmart') ? 'BUYER' : 'FARMER');
+      setStep('ROLE_SELECTION');
     } catch (err: any) {
-      console.warn('[AuthModal] Google login fallback:', err);
-      setSuccessMessage('Google account authenticated.');
+      console.warn('[AuthModal] Google login error:', err);
+      setErrorMessage(err.message || 'Google authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteAccountCreation = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!pendingGoogleUser) return;
+
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await loginWithGoogle({
+        email: pendingGoogleUser.email,
+        name: pendingGoogleUser.name,
+        avatarUrl: pendingGoogleUser.avatarUrl,
+        role: chosenRole,
+      });
+
+      setSuccessMessage(
+        `Account created successfully as ${chosenRole === 'BUYER' ? 'Buyer' : 'Seller (Farmer)'}! Redirecting...`
+      );
+
       setTimeout(() => {
         closeAuthModal();
-      }, 600);
+        setStep('AUTH');
+        setPendingGoogleUser(null);
+        if (chosenRole === 'BUYER') {
+          router.push('/buyer/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      }, 700);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to complete profile creation.');
     } finally {
       setLoading(false);
     }
@@ -249,15 +342,24 @@ export function AuthModal() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#ef4d23]" />
               <h2 className="text-xl font-extrabold text-neutral-900 tracking-tight">
-                Krishi<span className="text-[#ef4d23]">Setu</span> Access
+                {step === 'ROLE_SELECTION' ? (
+                  <>Profile <span className="text-[#ef4d23]">Onboarding</span></>
+                ) : (
+                  <>Krishi<span className="text-[#ef4d23]">Setu</span> Access</>
+                )}
               </h2>
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Canonical Identity • Email OTP • Password • Google OAuth
+              {step === 'ROLE_SELECTION'
+                ? 'Choose your primary role • Easily switch profiles afterwards'
+                : 'Canonical Identity • Email OTP • Password • Google OAuth'}
             </p>
           </div>
           <button
-            onClick={closeAuthModal}
+            onClick={() => {
+              setStep('AUTH');
+              closeAuthModal();
+            }}
             className="p-1 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -265,7 +367,7 @@ export function AuthModal() {
         </div>
 
         {/* Demo Mode Badge */}
-        {isDemoMode && (
+        {isDemoMode && step === 'AUTH' && (
           <div className="bg-amber-50/80 border-b border-amber-200/60 px-6 py-2 flex items-center justify-between text-xs text-amber-900">
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
@@ -277,8 +379,9 @@ export function AuthModal() {
           </div>
         )}
 
-        {/* Auth method tab switcher */}
-        <div className="px-6 pt-4 flex gap-1 border-b border-neutral-200">
+        {/* Auth method tab switcher - only when in AUTH step */}
+        {step === 'AUTH' && (
+          <div className="px-6 pt-4 flex gap-1 border-b border-neutral-200">
           <button
             type="button"
             onClick={() => {
@@ -325,6 +428,7 @@ export function AuthModal() {
             Google OAuth
           </button>
         </div>
+        )}
 
         {/* Modal Body */}
         <div className="p-6">
@@ -343,8 +447,151 @@ export function AuthModal() {
             </div>
           )}
 
-          {/* TAB 1: EMAIL OTP */}
-          {activeTab === 'OTP' && (
+          {/* STEP: ROLE SELECTION FOR NEW GOOGLE ACCOUNT */}
+          {step === 'ROLE_SELECTION' && pendingGoogleUser && (
+            <div className="space-y-4 animate-fadeIn">
+              {/* Google account badge */}
+              <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center font-bold text-emerald-800 text-sm overflow-hidden">
+                    {pendingGoogleUser.avatarUrl ? (
+                      <img src={pendingGoogleUser.avatarUrl} alt="Google Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      pendingGoogleUser.name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900">{pendingGoogleUser.name}</div>
+                    <div className="text-[11px] text-neutral-500 font-mono">{pendingGoogleUser.email}</div>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  Google Verified
+                </span>
+              </div>
+
+              <div className="text-center space-y-1">
+                <h3 className="text-sm font-extrabold text-neutral-900">
+                  Select Your Marketplace Profile
+                </h3>
+                <p className="text-xs text-neutral-500">
+                  Are you joining KrishiSetu as a Seller (Farmer) or a Buyer?
+                </p>
+              </div>
+
+              {/* 2 Big Choice Cards */}
+              <div className="grid grid-cols-1 gap-3">
+                {/* Seller Card */}
+                <button
+                  type="button"
+                  onClick={() => setChosenRole('FARMER')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                    chosenRole === 'FARMER'
+                      ? 'border-emerald-500 bg-emerald-50/70 shadow-sm'
+                      : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        chosenRole === 'FARMER' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        <Sprout className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-neutral-900 flex items-center gap-1.5">
+                          <span>🌾 Seller (Farmer / Producer)</span>
+                          <span className="text-[9px] bg-emerald-200/80 text-emerald-900 font-bold px-1.5 py-0.5 rounded">
+                            Sell Harvest
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-neutral-600 mt-0.5">
+                          List lots, compare MSP & mandi prices, pool with FPOs, and accept buyer bids.
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
+                      chosenRole === 'FARMER' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-300'
+                    }`}>
+                      {chosenRole === 'FARMER' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Buyer Card */}
+                <button
+                  type="button"
+                  onClick={() => setChosenRole('BUYER')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                    chosenRole === 'BUYER'
+                      ? 'border-blue-500 bg-blue-50/70 shadow-sm'
+                      : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        chosenRole === 'BUYER' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-neutral-900 flex items-center gap-1.5">
+                          <span>🏢 Buyer (Trader / Processor / Retailer)</span>
+                          <span className="text-[9px] bg-blue-200/80 text-blue-900 font-bold px-1.5 py-0.5 rounded">
+                            Procure Produce
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-neutral-600 mt-0.5">
+                          Post crop purchase demands, discover aggregated lots, negotiate prices, and execute digital contracts.
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
+                      chosenRole === 'BUYER' ? 'border-blue-600 bg-blue-600 text-white' : 'border-neutral-300'
+                    }`}>
+                      {chosenRole === 'BUYER' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Informational note about switching profile afterwards */}
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Dual-Profile Flexibility: </span>
+                  You can seamlessly switch between <strong>Seller</strong> and <strong>Buyer</strong> profiles at any time from the top navigation bar.
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep('AUTH')}
+                  className="py-2.5 px-4 rounded-xl border border-neutral-300 text-neutral-700 text-xs font-bold hover:bg-neutral-50 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCompleteAccountCreation}
+                  disabled={loading}
+                  className="flex-1 py-2.5 px-4 bg-[#ef4d23] hover:bg-[#d83f17] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                >
+                  <span>{loading ? 'Creating Account...' : `Continue as ${chosenRole === 'BUYER' ? 'Buyer' : 'Seller (Farmer)'}`}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'AUTH' && (
+            <>
+              {/* TAB 1: EMAIL OTP */}
+              {activeTab === 'OTP' && (
             <div>
               {otpStep === 'EMAIL' ? (
                 <form onSubmit={handleRequestOtp} className="space-y-4">
@@ -510,72 +757,129 @@ export function AuthModal() {
 
           {/* TAB 3: GOOGLE OAUTH */}
           {activeTab === 'GOOGLE' && (
-            <div className="space-y-4 py-2">
-              <div className="text-center space-y-1.5">
+            <div className="space-y-4 py-1">
+              <div className="text-center space-y-1">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[11px] font-semibold text-emerald-700">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Verified Google OAuth 2.0 Linkage</span>
+                  <span>Google Identity Linkage</span>
                 </div>
-                <p className="text-xs text-neutral-600 leading-relaxed px-2">
-                  Sign in securely with your Google account. Your platform identity and permissions are automatically verified and linked.
+                <p className="text-xs text-neutral-600 leading-relaxed px-1">
+                  Sign in with your Google account. Non-admin users choose between <strong>Seller</strong> and <strong>Buyer</strong> profiles and can switch anytime.
                 </p>
               </div>
 
-              {/* Primary One-Click Google Sign In */}
-              <button
-                type="button"
-                onClick={() => handleGoogleLogin('krishisetu.in@gmail.com')}
-                disabled={loading}
-                className="w-full py-3 px-4 bg-white border-2 border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 text-neutral-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-3 shadow-sm hover:shadow transition-all group disabled:opacity-60"
+              {/* Google Email Input Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleGoogleLogin();
+                }}
+                className="space-y-3"
               >
-                <svg className="w-4 h-4 transition-transform group-hover:scale-110 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#EA4335"
-                    d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L1.6 7c-.8 1.6-1.3 3.4-1.3 5.3s.5 3.7 1.3 5.3l3.7-2.9z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.4-6.7-5.3L1.6 16c1.9 3.8 5.8 6.4 10.4 6.4z"
-                  />
-                </svg>
-                <span>{loading ? 'Authenticating with Google...' : 'Continue with Google'}</span>
-              </button>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                    Your Google Account Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      required
+                      value={googleEmailInput}
+                      onChange={(e) => setGoogleEmailInput(e.target.value)}
+                      placeholder="e.g. yourname@gmail.com"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#ef4d23]/20 focus:border-[#ef4d23]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-white border-2 border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 text-neutral-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-3 shadow-sm hover:shadow transition-all group disabled:opacity-60"
+                >
+                  <svg className="w-4 h-4 transition-transform group-hover:scale-110 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#EA4335"
+                      d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L1.6 7c-.8 1.6-1.3 3.4-1.3 5.3s.5 3.7 1.3 5.3l3.7-2.9z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.4-6.7-5.3L1.6 16c1.9 3.8 5.8 6.4 10.4 6.4z"
+                    />
+                  </svg>
+                  <span>{loading ? 'Authenticating with Google...' : 'Continue with Google'}</span>
+                </button>
+              </form>
 
               {/* Quick Select Google Profiles */}
               <div className="pt-2">
-                <div className="flex items-center gap-2 mb-2.5">
+                <div className="flex items-center gap-2 mb-2">
                   <div className="h-px bg-neutral-200 flex-1" />
-                  <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold">Instant Profile Link</span>
+                  <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold">1-Click Test Accounts</span>
                   <div className="h-px bg-neutral-200 flex-1" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => handleGoogleLogin('krishisetu.in@gmail.com')}
+                    onClick={() => {
+                      setGoogleEmailInput('krishisetu.in@gmail.com');
+                      handleGoogleLogin('krishisetu.in@gmail.com');
+                    }}
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
                   >
                     <div className="text-[11px] font-bold text-neutral-800 group-hover:text-[#ef4d23] truncate">krishisetu.in@gmail.com</div>
-                    <div className="text-[10px] text-neutral-500">Platform SMTP & Admin</div>
+                    <div className="text-[10px] text-neutral-500">Platform Admin (Direct)</div>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleGoogleLogin('ramesh.kumar@gmail.com')}
+                    onClick={() => {
+                      setGoogleEmailInput('ramesh.kumar@gmail.com');
+                      handleGoogleLogin('ramesh.kumar@gmail.com');
+                    }}
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
                   >
                     <div className="text-[11px] font-bold text-neutral-800 group-hover:text-[#ef4d23] truncate">ramesh.kumar@gmail.com</div>
-                    <div className="text-[10px] text-neutral-500">Verified Farmer Account</div>
+                    <div className="text-[10px] text-neutral-500">Seller Account</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGoogleEmailInput('freshmart.procure@gmail.com');
+                      handleGoogleLogin('freshmart.procure@gmail.com');
+                    }}
+                    disabled={loading}
+                    className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
+                  >
+                    <div className="text-[11px] font-bold text-neutral-800 group-hover:text-[#ef4d23] truncate">freshmart.procure@gmail.com</div>
+                    <div className="text-[10px] text-neutral-500">Buyer Account</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const demoEmail = `user.${Date.now().toString().slice(-4)}@gmail.com`;
+                      setGoogleEmailInput(demoEmail);
+                      handleGoogleLogin(demoEmail);
+                    }}
+                    disabled={loading}
+                    className="p-2.5 rounded-xl border border-dashed border-[#ef4d23]/50 bg-[#ef4d23]/5 hover:bg-[#ef4d23]/10 text-left transition-all group"
+                  >
+                    <div className="text-[11px] font-bold text-[#ef4d23] truncate">+ New Google User</div>
+                    <div className="text-[10px] text-neutral-600">Triggers Buyer/Seller Choice</div>
                   </button>
                 </div>
               </div>
@@ -748,6 +1052,8 @@ export function AuthModal() {
               </div>
             </div>
           )}
+          </>
+        )}
         </div>
       </div>
     </div>,

@@ -54,6 +54,10 @@ class GoogleAuthDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsIn(['FARMER', 'FPO', 'BUYER', 'ADMIN'])
+  role?: 'FARMER' | 'FPO' | 'BUYER' | 'ADMIN';
 }
 
 class RequestOtpDto {
