@@ -325,7 +325,7 @@ export function AppHeader() {
         )}
 
         {/* Auth Button: Logout if authenticated, Sign In if guest */}
-        {isAuthenticated && user && !isDemoMode ? (
+        {user ? (
           <button
             type="button"
             onClick={logout}
@@ -382,12 +382,21 @@ export function AppHeader() {
             </Link>
           ))}
 
-          {(isAuthenticated || isDemoMode) && user && (
-            <div className="pt-2 mt-1 border-t border-neutral-100">
+          {user ? (
+            <div className="pt-2 mt-1 border-t border-neutral-100 flex flex-col gap-1">
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-neutral-800 hover:bg-neutral-100 font-bold"
+              >
+                <UserIcon className="w-4 h-4 text-[#ef4d23]" />
+                <span>My Profile & Settings</span>
+              </Link>
+
               <div className="px-2 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                 Switch Profile ({user.name.split(' ')[0]})
               </div>
-              <div className="grid grid-cols-2 gap-1.5 mt-1">
+              <div className="grid grid-cols-2 gap-1.5 mt-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -418,6 +427,32 @@ export function AppHeader() {
                   <span>🏢 Buyer</span>
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold mt-1 text-xs"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <div className="pt-2 mt-1 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#09090b] text-white rounded-xl text-xs font-bold shadow-xs"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-[#ef4d23]" />
+                <span>Sign In / Register</span>
+              </button>
             </div>
           )}
 
