@@ -374,6 +374,38 @@ class ApiClient {
     );
   }
 
+  // User Profile & Avatar
+  async getUserProfile(params?: { userId?: string; email?: string }) {
+    const query = new URLSearchParams();
+    if (params?.userId) query.append('userId', params.userId);
+    if (params?.email) query.append('email', params.email);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return this.request<{ user: any }>(`/api/user/profile${qs}`);
+  }
+
+  async updateUserProfile(profileData: any) {
+    return this.request<{ success: boolean; user: any }>('/api/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async uploadAvatar(imageDataOrFile: { image?: string; file?: File; filename?: string; userId?: string }) {
+    if (imageDataOrFile.file) {
+      const formData = new FormData();
+      formData.append('file', imageDataOrFile.file);
+      if (imageDataOrFile.userId) formData.append('userId', imageDataOrFile.userId);
+      return this.request<{ success: boolean; avatarUrl: string; source: string }>('/api/user/avatar', {
+        method: 'POST',
+        body: formData as any,
+      });
+    }
+    return this.request<{ success: boolean; avatarUrl: string; source: string }>('/api/user/avatar', {
+      method: 'POST',
+      body: JSON.stringify(imageDataOrFile),
+    });
+  }
+
   // Admin User Management
   async getAdminUsers(params?: { search?: string; role?: string; status?: string; provider?: string }) {
     const query = new URLSearchParams();

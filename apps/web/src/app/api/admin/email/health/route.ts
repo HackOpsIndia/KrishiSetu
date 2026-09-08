@@ -9,7 +9,7 @@ export async function GET() {
     connected: true,
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
-    fromAddress: process.env.SMTP_FROM || 'KrishiSetu <krishisetu.in@gmail.com>',
+    fromAddress: process.env.SMTP_FROM || 'KrishiSetu Support',
     details: isSmtpSet
       ? 'Connected to production Gmail SMTP.'
       : 'Simulated Sandbox: OTP and notifications logged and available in test console.',

@@ -265,20 +265,14 @@ export function AuthModal() {
         profile.avatarUrl ||
         'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80';
 
-      const isAdmin =
-        targetEmail === 'admin@demo.in' ||
-        targetEmail === 'admin@krishisetu.in' ||
-        targetEmail === 'krishisetu.in@gmail.com' ||
-        targetEmail.startsWith('admin@');
+      const res = await loginWithGoogle({
+        email: targetEmail,
+        name,
+        avatarUrl,
+        idToken: profile.idToken,
+      });
 
-      if (isAdmin) {
-        await loginWithGoogle({
-          email: targetEmail,
-          name: `${name} (Admin)`,
-          avatarUrl,
-          idToken: profile.idToken,
-          role: 'ADMIN',
-        });
+      if (res?.user?.role === 'ADMIN' || res?.isAdmin) {
         setSuccessMessage(`Google Verified: ${targetEmail}. Redirecting to Admin Governance...`);
         setTimeout(() => {
           closeAuthModal();
@@ -755,7 +749,7 @@ export function AuthModal() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="e.g. ramesh@demo.in"
+                        placeholder="e.g. yourname@gmail.com"
                         className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#ef4d23]/20 focus:border-[#ef4d23]"
                       />
                     </div>

@@ -1,95 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '../../../../../lib/server/prisma';
+import { isServerAdminEmail } from '../../../../../lib/server/adminAuth';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, otp } = await req.json();
     const normEmail = (email || '').toLowerCase().trim();
 
-    const CANONICAL_USERS: Record<string, any> = {
-      'ramesh@demo.in': {
-        id: 'farmer-ramesh',
-        name: 'Ramesh Kumar',
-        email: 'ramesh@demo.in',
-        role: 'FARMER',
-        status: 'ACTIVE',
-        authProvider: 'DEMO',
-        phone: '+91 98765 43210',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
-        village: 'Dehu Road',
-        district: 'Pune',
-        state: 'Maharashtra',
-      },
-      'freshmart@demo.in': {
-        id: 'buyer-freshmart',
-        name: 'FreshMart Foods',
-        email: 'freshmart@demo.in',
-        role: 'BUYER',
-        status: 'ACTIVE',
-        authProvider: 'DEMO',
-        phone: '+91 98220 55443',
-        avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&q=80',
-        companyName: 'FreshMart Foods Ltd.',
-        buyerType: 'Corporate Processor',
-        district: 'Pune',
-        state: 'Maharashtra',
-      },
-      'admin@demo.in': {
-        id: 'admin-krishi',
-        name: 'KrishiSetu State Admin',
-        email: 'admin@demo.in',
-        role: 'ADMIN',
-        status: 'ACTIVE',
-        authProvider: 'DEMO',
-        phone: '+91 91100 22334',
-        avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80',
-        district: 'State Operations Hub',
-        state: 'Maharashtra',
-      },
-      'fpo@demo.in': {
-        id: 'fpo-pune',
-        name: 'Pune FPO Collective',
-        email: 'fpo@demo.in',
-        role: 'FPO',
-        status: 'ACTIVE',
-        authProvider: 'DEMO',
-        phone: '+91 98888 12345',
-        district: 'Pune',
-        state: 'Maharashtra',
-      },
-    };
-
-    let user = CANONICAL_USERS[normEmail];
-    if (!user) {
-      const isAdmin = normEmail === 'admin@demo.in' || normEmail === 'admin@krishisetu.in';
-      const isBuyer = normEmail.includes('buyer') || normEmail.includes('freshmart');
-      const role = isAdmin ? 'ADMIN' : isBuyer ? 'BUYER' : 'FARMER';
-      user = {
-        id: `user-${Date.now()}`,
-        name: normEmail.split('@')[0] || 'KrishiSetu User',
-        email: normEmail,
-        role,
-        status: 'ACTIVE',
-        authProvider: 'EMAIL',
-        district: 'Pune',
-        state: 'Maharashtra',
-      };
+    if (!normEmail) {
+      return NextResponse.json({ message: 'Email address is required' }, { status: 400 });
     }
+
+    const isAdmin = isServerAdminEmail(normEmail);
+
+    let dbUser: any = null;
+
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { email: normEmail },
+        include: {
+          farmerProfile: true,
+          buyerProfile: true,
+        },
+      });
+
+      if (!dbUser) {
+        const defaultRole = isAdmin ? 'ADMIN' : normEmail.includes('buyer') ? 'BUYER' : 'FARMER';
+        dbUser = await prisma.user.create({
+          data: {
+            email: normEmail,
+            name: normEmail.split('@')[0],
+            role: defaultRole as any,
+            authProvider: 'EMAIL',
+            status: 'ACTIVE',
+            isEmailVerified: true,
+            lastLoginAt: new Date(),
+          },
+          include: {
+            farmerProfile: true,
+            buyerProfile: true,
+          },
+        });
+      } else {
+        const updateData: any = {
+          isEmailVerified: true,
+          lastLoginAt: new Date(),
+        };
+        if (isAdmin && dbUser.role !== 'ADMIN') {
+          updateData.role = 'ADMIN';
+        }
+        dbUser = await prisma.user.update({
+          where: { id: dbUser.id },
+          data: updateData,
+          include: {
+            farmerProfile: true,
+            buyerProfile: true,
+          },
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn('[OTP Verify API] DB access fallback:', dbErr?.message);
+    }
+
+    const role = dbUser?.role || (isAdmin ? 'ADMIN' : normEmail.includes('buyer') ? 'BUYER' : 'FARMER');
+
+    const user = {
+      id: dbUser?.id || `otp-user-${Date.now()}`,
+      name: dbUser?.name || normEmail.split('@')[0] || 'Verified User',
+      email: normEmail,
+      role,
+      status: dbUser?.status || 'ACTIVE',
+      authProvider: dbUser?.authProvider || 'EMAIL',
+      phone: dbUser?.phone || undefined,
+      avatarUrl: dbUser?.avatarUrl || undefined,
+      village: dbUser?.farmerProfile?.village || undefined,
+      district: dbUser?.farmerProfile?.district || 'Pune',
+      state: dbUser?.farmerProfile?.state || 'Maharashtra',
+      companyName: dbUser?.buyerProfile?.companyName || undefined,
+      buyerType: dbUser?.buyerProfile?.buyerType || undefined,
+    };
 
     const tokenPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 86400,
+      exp: Math.floor(Date.now() / 1000) + 86400 * 7,
     };
     const token = `jwt.${Buffer.from(JSON.stringify(tokenPayload)).toString('base64')}.verified`;
 
-    return NextResponse.json({
-      success: true,
-      message: 'OTP successfully verified.',
-      user,
-      token,
-    });
+    return NextResponse.json({ user, token, verified: true });
   } catch (err: any) {
     return NextResponse.json(
       { message: err?.message || 'OTP verification failed' },

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { isDemoEnvironment } from '../lib/env';
 
-export type UserRole = 'FARMER' | 'BUYER' | 'ADMIN' | 'FPO';
+export type UserRole = 'FARMER' | 'BUYER' | 'ADMIN' | 'FPO' | 'STAFF';
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'DISABLED' | 'PENDING';
 export type AuthProviderType = 'EMAIL' | 'GOOGLE' | 'DEMO';
 
@@ -23,59 +23,6 @@ export interface UserProfile {
   companyName?: string;
   buyerType?: string;
 }
-
-const CANONICAL_USERS: Record<UserRole, UserProfile> = {
-  FARMER: {
-    id: 'farmer-ramesh',
-    name: 'Ramesh Kumar',
-    email: 'ramesh@demo.in',
-    role: 'FARMER',
-    status: 'ACTIVE',
-    authProvider: 'DEMO',
-    phone: '+91 98765 43210',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
-    village: 'Dehu Road',
-    district: 'Pune',
-    state: 'Maharashtra',
-  },
-  BUYER: {
-    id: 'buyer-freshmart',
-    name: 'FreshMart Foods',
-    email: 'freshmart@demo.in',
-    role: 'BUYER',
-    status: 'ACTIVE',
-    authProvider: 'DEMO',
-    phone: '+91 98220 55443',
-    avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&q=80',
-    companyName: 'FreshMart Foods Ltd.',
-    buyerType: 'Corporate Processor',
-    district: 'Pune',
-    state: 'Maharashtra',
-  },
-  ADMIN: {
-    id: 'admin-krishi',
-    name: 'KrishiSetu State Admin',
-    email: 'admin@demo.in',
-    role: 'ADMIN',
-    status: 'ACTIVE',
-    authProvider: 'DEMO',
-    phone: '+91 91100 22334',
-    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80',
-    district: 'State Operations Hub',
-    state: 'Maharashtra',
-  },
-  FPO: {
-    id: 'fpo-pune',
-    name: 'Pune FPO Collective',
-    email: 'fpo@demo.in',
-    role: 'FPO',
-    status: 'ACTIVE',
-    authProvider: 'DEMO',
-    phone: '+91 98888 12345',
-    district: 'Pune',
-    state: 'Maharashtra',
-  },
-};
 
 function getStoredUsers(): Record<string, UserProfile> {
   if (typeof window === 'undefined') return {};
@@ -103,7 +50,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setRole: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
-  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   getExistingAccount: (email: string) => UserProfile | null;
   loginWithPassword: (email: string, pass: string) => Promise<any>;
   loginWithGoogle: (payload: {
@@ -131,7 +78,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<UserRole>('FARMER');
-  const [user, setUser] = useState<UserProfile | null>(() => isDemoEnvironment() ? CANONICAL_USERS.FARMER : null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => isDemoEnvironment());
@@ -146,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedToken = localStorage.getItem('krishisetu_token');
       if (savedToken) {
         setToken(savedToken);
+        api.setToken(savedToken);
       }
 
       const savedUser = localStorage.getItem('krishisetu_user');
@@ -157,20 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRoleState(parsed.role);
           }
         } catch { }
-      } else if (envDemo) {
-        const savedRole = localStorage.getItem('krishisetu_active_role') as UserRole;
-        if (savedRole && CANONICAL_USERS[savedRole]) {
-          setRoleState(savedRole);
-          setUser(CANONICAL_USERS[savedRole]);
-        } else {
-          setUser(CANONICAL_USERS.FARMER);
-        }
-      } else {
-        setUser(null);
       }
     }
 
-    // Check backend auth config for production vs demo mode
+    // Check backend auth config
     api.getAuthConfig().then((cfg) => {
       if (cfg && typeof cfg.demoMode === 'boolean') {
         setIsDemoMode(envDemo ? cfg.demoMode : false);
@@ -184,12 +122,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const norm = (rawEmail || '').toLowerCase().trim();
     if (!norm) return null;
     const stored = getStoredUsers();
-    if (stored[norm]) return stored[norm];
-    const canonical = Object.values(CANONICAL_USERS).find((c) => c.email.toLowerCase() === norm);
-    return canonical || null;
+    return stored[norm] || null;
   };
 
-  const updateUserProfile = (updates: Partial<UserProfile>) => {
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
     const updated: UserProfile = { ...user, ...updates };
     setUser(updated);
@@ -201,15 +137,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRoleState(updated.role);
       }
     }
+
+    // Persist to database
+    try {
+      await api.updateUserProfile({
+        id: user.id,
+        email: user.email,
+        ...updates,
+      });
+    } catch (err: any) {
+      console.warn('[AuthContext] Profile update DB warning:', err?.message);
+    }
   };
 
   const switchRole = async (newRole: UserRole) => {
+    // Standard users can only toggle between FARMER (Seller) and BUYER.
+    // Admin users can switch to any role.
+    if (user && user.role !== 'ADMIN' && newRole === 'ADMIN') {
+      console.warn('[AuthContext] Regular users cannot self-promote to Admin');
+      return;
+    }
+
     setRoleState(newRole);
 
-    // If current user is a real user (Google OAuth, Email, or non-demo canonical):
-    const isCustomUser = user && (user.authProvider === 'GOOGLE' || user.authProvider === 'EMAIL' || !isDemoEnvironment());
-
-    if (isCustomUser && user) {
+    if (user) {
       const updatedUser: UserProfile = {
         ...user,
         role: newRole,
@@ -223,25 +174,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('krishisetu_user', JSON.stringify(updatedUser));
       }
       try {
-        await api.updateUserRole(updatedUser.id, newRole, 'Self-service profile switch');
-      } catch {
-        // In-memory fallback
+        await api.updateUserProfile({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          role: newRole,
+        });
+      } catch (err: any) {
+        console.warn('[AuthContext] Role persistence DB warning:', err?.message);
       }
-      return;
-    }
-
-    // Pure canonical demo persona switch
-    const newUser = CANONICAL_USERS[newRole] || CANONICAL_USERS.FARMER;
-    setUser(newUser);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('krishisetu_active_role', newRole);
-      localStorage.setItem('krishisetu_user', JSON.stringify(newUser));
-    }
-    try {
-      const res = await api.login(newUser.email, 'demo1234');
-      setToken(res.token);
-    } catch {
-      // In-memory offline fallback
+    } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('krishisetu_active_role', newRole);
+      }
     }
   };
 
@@ -253,48 +197,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRoleState(res.user.role);
         setToken(res.token);
         saveStoredUser(res.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('krishisetu_user', JSON.stringify(res.user));
+          localStorage.setItem('krishisetu_token', res.token);
+          localStorage.setItem('krishisetu_active_role', res.user.role);
+        }
       }
       return res;
     } catch (err: any) {
-      console.warn('[AuthContext] Backend password login failed, applying local fallback:', err?.message);
+      console.warn('[AuthContext] Password login fallback:', err?.message);
       const normEmail = (email || '').toLowerCase().trim();
-      const matchedCanonical = Object.values(CANONICAL_USERS).find((u) => u.email.toLowerCase() === normEmail);
-      if (matchedCanonical) {
-        setUser(matchedCanonical);
-        setRoleState(matchedCanonical.role);
-        const fallbackToken = `jwt-demo-${Date.now()}`;
-        setToken(fallbackToken);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('krishisetu_user', JSON.stringify(matchedCanonical));
-          localStorage.setItem('krishisetu_token', fallbackToken);
-          localStorage.setItem('krishisetu_active_role', matchedCanonical.role);
-        }
-        return { user: matchedCanonical, token: fallbackToken };
-      }
+      const existing = getExistingAccount(normEmail);
 
-      const isAdmin = normEmail === 'admin@demo.in' || normEmail === 'admin@krishisetu.in' || normEmail === 'krishisetu.in@gmail.com' || normEmail.startsWith('admin@');
-      const isBuyer = normEmail.includes('buyer') || normEmail.includes('freshmart');
-      const role: UserRole = isAdmin ? 'ADMIN' : (isBuyer ? 'BUYER' : 'FARMER');
-
-      const fallbackUser: UserProfile = {
+      const fallbackUser: UserProfile = existing || {
         id: `user-${Date.now()}`,
         name: normEmail.split('@')[0] || 'KrishiSetu User',
         email: normEmail,
-        role,
+        role: 'FARMER',
         status: 'ACTIVE',
         authProvider: 'EMAIL',
         district: 'Pune',
         state: 'Maharashtra',
       };
-      const fallbackToken = `jwt-demo-${Date.now()}`;
+      const fallbackToken = `jwt-session-${Date.now()}`;
       setUser(fallbackUser);
-      setRoleState(role);
+      setRoleState(fallbackUser.role);
       setToken(fallbackToken);
       saveStoredUser(fallbackUser);
       if (typeof window !== 'undefined') {
         localStorage.setItem('krishisetu_user', JSON.stringify(fallbackUser));
         localStorage.setItem('krishisetu_token', fallbackToken);
-        localStorage.setItem('krishisetu_active_role', role);
+        localStorage.setItem('krishisetu_active_role', fallbackUser.role);
       }
       return { user: fallbackUser, token: fallbackToken };
     }
@@ -308,31 +241,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role?: UserRole;
   }) => {
     const targetEmail = (payload.email || '').toLowerCase().trim();
-    const isAdmin =
-      targetEmail === 'krishisetu.in@gmail.com';
-
-    // Check existing stored user if role not explicitly passed
     const existing = getExistingAccount(targetEmail);
-    const resolvedRole: UserRole = isAdmin
-      ? 'ADMIN'
-      : (payload.role || (existing?.role ? existing.role : (targetEmail.includes('buyer') || targetEmail.includes('freshmart') ? 'BUYER' : 'FARMER')));
+    const resolvedRole: UserRole = payload.role || (existing?.role ? existing.role : 'FARMER');
 
     try {
       const res = await api.loginWithGoogle({ ...payload, role: resolvedRole });
       if (res?.user) {
-        const finalUser: UserProfile = {
-          ...res.user,
-          role: isAdmin ? 'ADMIN' : (payload.role || res.user.role || resolvedRole),
-        };
-        setUser(finalUser);
-        setRoleState(finalUser.role);
+        setUser(res.user);
+        setRoleState(res.user.role);
         setToken(res.token);
-        saveStoredUser(finalUser);
-        return { ...res, user: finalUser, isNewUser: res.isNewUser ?? !existing };
+        saveStoredUser(res.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('krishisetu_user', JSON.stringify(res.user));
+          localStorage.setItem('krishisetu_token', res.token);
+          localStorage.setItem('krishisetu_active_role', res.user.role);
+        }
+        return { ...res, user: res.user, isNewUser: res.isNewUser ?? !existing };
       }
       return res;
     } catch (err: any) {
-      console.warn('[AuthContext] Backend google login failed, applying resilient Google session:', err?.message);
+      console.warn('[AuthContext] Backend google login fallback:', err?.message);
 
       const fallbackUser: UserProfile = {
         id: existing?.id || `google-${Date.now()}`,
@@ -341,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: resolvedRole,
         status: 'ACTIVE',
         authProvider: 'GOOGLE',
-        avatarUrl: payload.avatarUrl || existing?.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
+        avatarUrl: payload.avatarUrl || existing?.avatarUrl,
         village: existing?.village || (resolvedRole === 'FARMER' ? 'Haveli Cluster' : undefined),
         district: existing?.district || 'Pune',
         state: existing?.state || 'Maharashtra',
@@ -366,7 +294,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       return await api.requestOtp(email, purpose);
     } catch (err: any) {
-      console.warn('[AuthContext] OTP request offline fallback:', err?.message);
       return {
         success: true,
         message: 'A 6-digit verification code has been dispatched.',
@@ -384,24 +311,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res?.user) {
         setUser(res.user);
         setRoleState(res.user.role);
+        saveStoredUser(res.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('krishisetu_user', JSON.stringify(res.user));
+          localStorage.setItem('krishisetu_active_role', res.user.role);
+        }
       }
       if (res?.token) {
         setToken(res.token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('krishisetu_token', res.token);
+        }
       }
       return res;
     } catch (err: any) {
-      console.warn('[AuthContext] OTP verify fallback:', err?.message);
       const normEmail = (email || '').toLowerCase().trim();
-      const matchedCanonical = Object.values(CANONICAL_USERS).find((u) => u.email.toLowerCase() === normEmail);
-      const isAdmin = normEmail === 'admin@demo.in' || normEmail === 'admin@krishisetu.in';
-      const isBuyer = normEmail.includes('buyer') || normEmail.includes('freshmart');
-      const role: UserRole = isAdmin ? 'ADMIN' : (isBuyer ? 'BUYER' : 'FARMER');
+      const existing = getExistingAccount(normEmail);
 
-      const fallbackUser: UserProfile = matchedCanonical || {
+      const fallbackUser: UserProfile = existing || {
         id: `otp-user-${Date.now()}`,
         name: normEmail.split('@')[0] || 'Verified User',
         email: normEmail,
-        role,
+        role: 'FARMER',
         status: 'ACTIVE',
         authProvider: 'EMAIL',
         district: 'Pune',
@@ -409,12 +340,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       const fallbackToken = `otp-token-${Date.now()}`;
       setUser(fallbackUser);
-      setRoleState(role);
+      setRoleState(fallbackUser.role);
       setToken(fallbackToken);
       if (typeof window !== 'undefined') {
         localStorage.setItem('krishisetu_user', JSON.stringify(fallbackUser));
         localStorage.setItem('krishisetu_token', fallbackToken);
-        localStorage.setItem('krishisetu_active_role', role);
+        localStorage.setItem('krishisetu_active_role', fallbackUser.role);
       }
       return { user: fallbackUser, token: fallbackToken, verified: true };
     }
@@ -447,20 +378,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const isAuthenticated = isDemoMode ? true : (!!token && !!user);
+  const isAuthenticated = !!user || !!token;
 
   const logout = () => {
     api.clearToken();
     setToken(null);
+    setUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('krishisetu_token');
       localStorage.removeItem('krishisetu_user');
       localStorage.removeItem('krishisetu_active_role');
-    }
-    if (isDemoMode) {
-      switchRole('FARMER');
-    } else {
-      setUser(null);
     }
   };
 
@@ -470,8 +397,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('krishisetu_active_role');
       }
-      await switchRole('FARMER');
-      await new Promise((r) => setTimeout(r, 600));
+      setRoleState('FARMER');
+      await new Promise((r) => setTimeout(r, 400));
     } finally {
       setIsResetting(false);
     }
@@ -480,8 +407,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user || (isDemoMode ? CANONICAL_USERS[role] : null),
-        role,
+        user,
+        role: user?.role || role,
         status: user?.status || 'ACTIVE',
         isAuthenticated,
         setRole: switchRole,

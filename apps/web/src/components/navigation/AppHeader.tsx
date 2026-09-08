@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   KeyRound,
   LogOut,
+  User as UserIcon,
 } from 'lucide-react';
 import { AuthModal } from '../auth/AuthModal';
 
@@ -73,9 +74,7 @@ export function AppHeader() {
           </span>
           <span className="text-neutral-400">•</span>
           <span className="hidden sm:inline text-neutral-600">
-            {isDemoMode
-              ? 'Canonical Scenario: Ramesh Kumar • 18 Qtl Tomato (Hybrid A)'
-              : 'Market-Decision & Transaction Intelligence Platform'}
+            Market-Decision & Direct Transaction Intelligence Platform
           </span>
         </div>
 
@@ -194,6 +193,21 @@ export function AppHeader() {
                     </div>
                   </div>
 
+                  {/* My Profile Link */}
+                  <Link
+                    href="/profile"
+                    onClick={() => setRoleDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-neutral-700 hover:bg-neutral-100 transition-colors font-medium"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-600">
+                      <UserIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block leading-tight font-bold">My Profile</span>
+                      <span className="text-[10px] text-neutral-500">Avatar, role mode & settings</span>
+                    </div>
+                  </Link>
+
                   <div className="px-2 pt-1 pb-1 text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
                     Switch Marketplace Profile
                   </div>
@@ -254,8 +268,8 @@ export function AppHeader() {
                     {role === 'BUYER' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
                   </button>
 
-                  {/* Option 3: Admin (if admin email or demo mode) */}
-                  {(user.email.includes('admin') || user.email === 'krishisetu.in@gmail.com' || isDemoMode) && (
+                  {/* Option 3: Admin (strictly role-based without hardcoded email) */}
+                  {(role === 'ADMIN' || user.role === 'ADMIN') && (
                     <button
                       type="button"
                       onClick={() => {
