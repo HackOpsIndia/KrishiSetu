@@ -90,6 +90,10 @@ export default function HomePage() {
           onExploreClick={() => scrollToSection('opportunities')}
           onResetDemo={handleResetDemo}
           isResetting={isResetting}
+          opportunities={opportunities}
+          quantityQtl={quantityQtl}
+          onQuantityChange={setQuantityQtl}
+          onOpenAggregation={() => setShowAggregationModal(true)}
         />
       </section>
 

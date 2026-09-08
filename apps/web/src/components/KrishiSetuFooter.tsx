@@ -6,7 +6,7 @@ import { SproutIcon, ShieldCheckIcon } from './icons';
 
 export const KrishiSetuFooter: React.FC = () => {
   return (
-    <footer className="liquid-glass-dark w-full rounded-3xl p-6 sm:p-10 text-gray-400 mt-16 border border-white/10 text-left">
+    <footer className="w-full rounded-3xl p-6 sm:p-10 text-neutral-400 mt-16 bg-[#09090b] border border-neutral-800 text-left shadow-2xl">
       {/* Top 12-Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 mb-10">
         
