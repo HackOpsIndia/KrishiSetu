@@ -1,0 +1,524 @@
+// ============================================================
+// KrishiSetu — Prisma Schema
+// Core entities for the market-decision platform.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Users & Roles ---
+
+model User {
+  id                 String         @id @default(uuid())
+  email              String         @unique
+  passwordHash       String?
+  name               String
+  phone              String?
+  avatarUrl          String?
+  googleSubId        String?        @unique
+  authProvider       String         @default("EMAIL")
+  role               UserRole       @default(FARMER)
+  status             AccountStatus  @default(ACTIVE)
+  verificationStatus String         @default("UNVERIFIED")
+  isEmailVerified    Boolean        @default(false)
+  isActive           Boolean        @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  farmerProfile  FarmerProfile?
+  buyerProfile   BuyerProfile?
+  fpoProfile     FPOProfile?
+
+  sentOffers     Offer[]       @relation("OfferSender")
+  receivedOffers Offer[]       @relation("OfferReceiver")
+  auditEvents    AuditEvent[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  FARMER
+  FPO
+  BUYER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+  PENDING
+}
+
+enum LoginProvider {
+  EMAIL
+  GOOGLE
+  DEMO
+}
+
+// --- Farmer Profile ---
+
+model FarmerProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  village         String
+  district        String
+  state           String
+  latitude        Float?
+  longitude       Float?
+  preferredRadius Int      @default(100)
+  preferredPayment String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lots            Lot[]
+  fpoMemberships  FPOFarmer[]
+
+  @@map("farmer_profiles")
+}
+
+// --- FPO Profile ---
+
+model FPOProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  organizationName   String
+  registrationNumber String?
+  district           String
+  state              String
+  latitude           Float?
+  longitude          Float?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  members            FPOFarmer[]
+
+  @@map("fpo_profiles")
+}
+
+model FPOFarmer {
+  id        String   @id @default(uuid())
+  fpoId     String
+  fpo       FPOProfile    @relation(fields: [fpoId], references: [id])
+  farmerId  String
+  farmer    FarmerProfile @relation(fields: [farmerId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@unique([fpoId, farmerId])
+  @@map("fpo_farmers")
+}
+
+// --- Buyer Profile ---
+
+model BuyerProfile {
+  id                    String            @id @default(uuid())
+  userId                String            @unique
+  user                  User              @relation(fields: [userId], references: [id])
+  companyName           String
+  buyerType             BuyerType
+  latitude              Float?
+  longitude             Float?
+  serviceRadiusKm       Int               @default(50)
+  providesPickup        Boolean           @default(false)
+  verificationLevel     VerificationLevel @default(PROFILE_COMPLETE)
+  completedTransactions Int               @default(0)
+  successfulTransactions Int              @default(0)
+  onTimePayments        Int               @default(0)
+  disputes              Int               @default(0)
+  accountAgeDays        Int               @default(0)
+  paymentReliability    Int               @default(50)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  demands               BuyerDemand[]
+
+  @@map("buyer_profiles")
+}
+
+enum BuyerType {
+  TRADER
+  PROCESSOR
+  WHOLESALER
+  RETAILER
+  INSTITUTIONAL
+  EXPORTER
+}
+
+enum VerificationLevel {
+  PROFILE_COMPLETE
+  DOCUMENTS_SUBMITTED
+  PLATFORM_VERIFIED
+}
+
+// --- Commodities ---
+
+model Commodity {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String
+  defaultUnit String   @default("quintal")
+  mspPaise    Int?
+  createdAt   DateTime @default(now())
+
+  varieties   CommodityVariety[]
+  qualitySpecs QualitySpecification[]
+
+  @@map("commodities")
+}
+
+model CommodityVariety {
+  id          String    @id @default(uuid())
+  commodityId String
+  commodity   Commodity @relation(fields: [commodityId], references: [id])
+  name        String
+  createdAt   DateTime  @default(now())
+
+  @@unique([commodityId, name])
+  @@map("commodity_varieties")
+}
+
+model QualitySpecification {
+  id            String    @id @default(uuid())
+  commodityId   String
+  commodity     Commodity @relation(fields: [commodityId], references: [id])
+  parameterName String
+  dataType      String    // ENUM, NUMBER, TEXT
+  unit          String?
+  options       String[]  // for ENUM type
+  minValue      Float?    // for NUMBER type
+  maxValue      Float?    // for NUMBER type
+  createdAt     DateTime  @default(now())
+
+  @@map("quality_specifications")
+}
+
+// --- Lots ---
+
+model Lot {
+  id              String    @id @default(uuid())
+  farmerId        String
+  farmer          FarmerProfile @relation(fields: [farmerId], references: [id])
+  commodityName   String
+  varietyName      String
+  quantity        Float
+  unit            String    @default("quintal")
+  harvestDate     DateTime?
+  expectedSaleDate DateTime?
+  qualityGrade    String
+  qualityParams   Json?
+  minAcceptablePricePaise Int?
+  status          LotStatus @default(DRAFT)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  offers          Offer[]
+  transactions    Transaction[]
+
+  @@index([farmerId])
+  @@index([status])
+  @@map("lots")
+}
+
+enum LotStatus {
+  DRAFT
+  READY
+  MATCHED
+  OFFER_RECEIVED
+  NEGOTIATING
+  ACCEPTED
+  LOGISTICS_BOOKED
+  IN_TRANSIT
+  DELIVERED
+  PAYMENT_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// --- Markets ---
+
+model Market {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  state       String
+  district    String
+  latitude    Float?
+  longitude   Float?
+  marketType  String   @default("APMC")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  prices      MarketPrice[]
+
+  @@map("markets")
+}
+
+model MarketPrice {
+  id              String     @id @default(uuid())
+  marketId        String
+  market          Market     @relation(fields: [marketId], references: [id])
+  commodityName   String
+  varietyName      String
+  date            DateTime
+  minPricePaise   Int
+  maxPricePaise   Int
+  modalPricePaise Int
+  arrivals        Int?
+  priceTrend      PriceTrend @default(STABLE)
+  dataOrigin      DataOrigin @default(DEMO)
+  sourceTimestamp DateTime?
+  ingestedAt      DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+
+  @@index([marketId, commodityName, varietyName, date])
+  @@map("market_prices")
+}
+
+enum PriceTrend {
+  RISING
+  STABLE
+  FALLING
+}
+
+enum DataOrigin {
+  DEMO
+  GOVERNMENT_SOURCE
+  MANUAL
+  PROVIDER
+}
+
+// --- Buyer Demands ---
+
+model BuyerDemand {
+  id                  String       @id @default(uuid())
+  buyerId             String
+  buyer               BuyerProfile @relation(fields: [buyerId], references: [id])
+  commodityName       String
+  varietyName          String
+  quantity            Float
+  minQualityGrade     String
+  offeredPricePaise   Int
+  priceLowPaise       Int
+  priceHighPaise      Int
+  deliveryWindowStart DateTime
+  deliveryWindowEnd   DateTime
+  minLotSize          Float        @default(1)
+  qualityMatchScore   Int          @default(100)
+  isActive            Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([buyerId])
+  @@index([commodityName, varietyName, isActive])
+  @@map("buyer_demands")
+}
+
+// --- Offers & Negotiation ---
+
+model Offer {
+  id             String      @id @default(uuid())
+  lotId          String
+  lot            Lot         @relation(fields: [lotId], references: [id])
+  senderId       String
+  sender         User        @relation("OfferSender", fields: [senderId], references: [id])
+  receiverId     String
+  receiver       User        @relation("OfferReceiver", fields: [receiverId], references: [id])
+  pricePaise     Int
+  quantity       Float
+  status         OfferStatus @default(ACTIVE)
+  expiresAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  events         NegotiationEvent[]
+
+  @@index([lotId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@map("offers")
+}
+
+enum OfferStatus {
+  ACTIVE
+  COUNTERED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model NegotiationEvent {
+  id         String            @id @default(uuid())
+  offerId    String
+  offer      Offer             @relation(fields: [offerId], references: [id])
+  action     NegotiationAction
+  pricePaise Int?
+  actorId    String
+  message    String?
+  createdAt  DateTime          @default(now())
+
+  @@index([offerId])
+  @@map("negotiation_events")
+}
+
+enum NegotiationAction {
+  OFFER
+  COUNTER
+  ACCEPT
+  REJECT
+  EXPIRE
+}
+
+// --- Transactions ---
+
+model Transaction {
+  id             String            @id @default(uuid())
+  lotId          String
+  lot            Lot               @relation(fields: [lotId], references: [id])
+  buyerUserId    String
+  farmerUserId   String
+  agreedPricePaise Int
+  quantity       Float
+  status         TransactionStatus @default(CONFIRMED)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  events         TransactionEvent[]
+  logistics      LogisticsBooking?
+  payment        Payment?
+
+  @@index([lotId])
+  @@index([buyerUserId])
+  @@index([farmerUserId])
+  @@map("transactions")
+}
+
+enum TransactionStatus {
+  CONFIRMED
+  LOGISTICS_BOOKED
+  IN_TRANSIT
+  DELIVERED
+  PAYMENT_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model TransactionEvent {
+  id            String            @id @default(uuid())
+  transactionId String
+  transaction   Transaction       @relation(fields: [transactionId], references: [id])
+  fromStatus    TransactionStatus
+  toStatus      TransactionStatus
+  actorId       String
+  note          String?
+  createdAt     DateTime          @default(now())
+
+  @@index([transactionId])
+  @@map("transaction_events")
+}
+
+// --- Logistics ---
+
+model LogisticsBooking {
+  id              String      @id @default(uuid())
+  transactionId   String      @unique
+  transaction     Transaction @relation(fields: [transactionId], references: [id])
+  distanceKm      Float
+  estimatedCostPaise Int
+  vehicleType     String?
+  pickupDate      DateTime?
+  deliveryDate    DateTime?
+  driverPhone     String?
+  status          String      @default("BOOKED")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("logistics_bookings")
+}
+
+// --- Payments ---
+
+model Payment {
+  id              String        @id @default(uuid())
+  transactionId   String        @unique
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+  amountPaise     Int
+  status          PaymentStatus @default(PENDING)
+  method          String?
+  referenceNumber String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+// --- Platform Config ---
+
+model PlatformConfig {
+  id    String @id @default(uuid())
+  key   String @unique
+  value Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_config")
+}
+
+// --- Audit ---
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_events")
+}
+
+// --- Auth Challenges / OTP ---
+
+model AuthChallenge {
+  id         String               @id @default(uuid())
+  email      String
+  purpose    AuthChallengePurpose @default(LOGIN)
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int                  @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime             @default(now())
+  lastSentAt DateTime             @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("auth_challenges")
+}
+
+enum AuthChallengePurpose {
+  LOGIN
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  SENSITIVE_ACTION
+}
+
