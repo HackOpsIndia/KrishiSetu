@@ -64,7 +64,6 @@ KrishiSetu/
 │   └── shared/                 # 7 Server-authoritative domain engines, types & canonical data
 ├── docs/                       # Architecture, deployment, evaluator demo scripts, member guides
 │   └── members/                # Comprehensive beginner-to-advanced study guides for all 6 members
-├── docx/                       # Mirror documentation directory with identical guides
 ├── turbo.json                  # Turborepo task pipeline definition
 ├── package.json                # Workspaces root configuration
 └── scripts/                    # Canonical demo scenario reset & test scripts
