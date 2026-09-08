@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { ClientProviders } from '../components/providers/ClientProviders';
 
@@ -15,6 +16,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className="min-h-screen bg-[#ededed] text-neutral-900 font-inter antialiased">
         <ClientProviders>{children}</ClientProviders>
       </body>

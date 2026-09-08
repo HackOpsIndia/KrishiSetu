@@ -93,7 +93,7 @@ function saveStoredUser(profile: UserProfile) {
     const users = getStoredUsers();
     users[profile.email.toLowerCase().trim()] = profile;
     localStorage.setItem('krishisetu_registered_users', JSON.stringify(users));
-  } catch {}
+  } catch { }
 }
 
 interface AuthContextType {
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(parsed);
             setRoleState(parsed.role);
           }
-        } catch {}
+        } catch { }
       } else if (envDemo) {
         const savedRole = localStorage.getItem('krishisetu_active_role') as UserRole;
         if (savedRole && CANONICAL_USERS[savedRole]) {
@@ -309,10 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const targetEmail = (payload.email || '').toLowerCase().trim();
     const isAdmin =
-      targetEmail === 'admin@demo.in' ||
-      targetEmail === 'admin@krishisetu.in' ||
-      targetEmail === 'krishisetu.in@gmail.com' ||
-      targetEmail.startsWith('admin@');
+      targetEmail === 'krishisetu.in@gmail.com';
 
     // Check existing stored user if role not explicitly passed
     const existing = getExistingAccount(targetEmail);

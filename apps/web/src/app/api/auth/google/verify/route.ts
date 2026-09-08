@@ -1,14 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const email = (body.email || '').toLowerCase().trim();
+    let email = (body.email || '').toLowerCase().trim();
+    let name = body.name;
+    let avatarUrl = body.avatarUrl;
+
+    // Decode Google ID Token / GIS credential if provided
+    const rawCredential = body.credential || body.idToken;
+    if (rawCredential && typeof rawCredential === 'string') {
+      try {
+        const parts = rawCredential.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+          if (payload?.email && !email) {
+            email = payload.email.toLowerCase().trim();
+          }
+          if (payload?.name && !name) {
+            name = payload.name;
+          }
+          if (payload?.picture && !avatarUrl) {
+            avatarUrl = payload.picture;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not decode Google JWT credential in verify route:', e);
+      }
+    }
+
     if (!email) {
       return NextResponse.json({ message: 'Valid Google email is required' }, { status: 400 });
     }
 
-    const name = body.name || email.split('@')[0];
+    if (!name) {
+      name = email.split('@')[0];
+    }
     const isAdmin =
       email === 'admin@demo.in' ||
       email === 'admin@krishisetu.in' ||

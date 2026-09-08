@@ -135,7 +135,7 @@ KrishiSetu supports three frictionless, production-configured authentication met
    - 6-digit cryptographically generated OTP with 10-minute TTL.
    - Dispatched via enterprise Gmail SMTP transport with automated whitespace sanitization.
 2. **Google OAuth 2.0:**
-   - Powered by Google Identity Services Web Client (`1005466312619-t60vu0m5323j3cbv4ujb493s82q0s40a.apps.googleusercontent.com`).
+   - Powered by Google Identity Services Web Client (configured via `NEXT_PUBLIC_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID`).
    - Server-side cryptographic token signature verification on NestJS.
 3. **Password & JWT:**
    - Bcrypt-hashed credentials (10 rounds) + HS256 stateless JWT bearer tokens.

@@ -53,11 +53,11 @@ export function AuthModal() {
 
   // States
   const [step, setStep] = useState<'AUTH' | 'ROLE_SELECTION'>('AUTH');
-  const [googleEmailInput, setGoogleEmailInput] = useState('');
   const [pendingGoogleUser, setPendingGoogleUser] = useState<{
     email: string;
     name: string;
     avatarUrl?: string;
+    idToken?: string;
   } | null>(null);
   const [chosenRole, setChosenRole] = useState<'FARMER' | 'BUYER'>('FARMER');
   const [companyName, setCompanyName] = useState('');
@@ -77,6 +77,78 @@ export function AuthModal() {
     }, 1000);
     return () => clearInterval(timer);
   }, [countdown]);
+
+  // Google Identity Services (GIS) Button & Account Chooser Linkage
+  useEffect(() => {
+    if (!isAuthModalOpen || activeTab !== 'GOOGLE') return;
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    if (!clientId) return;
+
+    const initGis = () => {
+      if (typeof window === 'undefined' || !(window as any).google?.accounts?.id) return;
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response: any) => {
+            if (response?.credential) {
+              try {
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                  atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                const payload = JSON.parse(jsonPayload);
+                if (payload?.email) {
+                  handleGoogleProfileReceived({
+                    email: payload.email,
+                    name: payload.name || payload.given_name || payload.email.split('@')[0],
+                    avatarUrl: payload.picture,
+                    idToken: response.credential,
+                  });
+                }
+              } catch (parseErr) {
+                console.warn('Could not parse Google ID token credential:', parseErr);
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const slot = document.getElementById('google-gis-container');
+        if (slot) {
+          slot.innerHTML = '';
+          (window as any).google.accounts.id.renderButton(slot, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 340,
+            logo_alignment: 'left',
+          });
+        }
+      } catch (err) {
+        console.warn('GIS init exception:', err);
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      initGis();
+    } else {
+      const timer = setInterval(() => {
+        if ((window as any).google?.accounts?.id) {
+          clearInterval(timer);
+          initGis();
+        }
+      }, 300);
+      return () => clearInterval(timer);
+    }
+  }, [isAuthModalOpen, activeTab]);
 
   if (!isAuthModalOpen || !mounted) return null;
 
@@ -170,21 +242,28 @@ export function AuthModal() {
     }
   };
 
-  const handleGoogleLogin = async (googleEmail?: string) => {
+  const handleGoogleProfileReceived = async (profile: {
+    email: string;
+    name?: string;
+    avatarUrl?: string;
+    idToken?: string;
+  }) => {
     setLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
     try {
-      const targetEmail = (googleEmail || googleEmailInput || email || '').trim().toLowerCase();
+      const targetEmail = (profile.email || '').trim().toLowerCase();
       if (!targetEmail || !targetEmail.includes('@')) {
-        setErrorMessage('Please enter a valid Google account email address.');
+        setErrorMessage('Google account did not provide a valid email address.');
         setLoading(false);
         return;
       }
 
-      const rawName = targetEmail.split('@')[0];
+      const rawName = profile.name || targetEmail.split('@')[0];
       const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-      const avatarUrl = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80';
+      const avatarUrl =
+        profile.avatarUrl ||
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80';
 
       const isAdmin =
         targetEmail === 'admin@demo.in' ||
@@ -197,9 +276,10 @@ export function AuthModal() {
           email: targetEmail,
           name: `${name} (Admin)`,
           avatarUrl,
+          idToken: profile.idToken,
           role: 'ADMIN',
         });
-        setSuccessMessage(`Admin authenticated: ${targetEmail}. Redirecting to Governance...`);
+        setSuccessMessage(`Google Verified: ${targetEmail}. Redirecting to Admin Governance...`);
         setTimeout(() => {
           closeAuthModal();
           router.push('/admin/dashboard');
@@ -214,6 +294,7 @@ export function AuthModal() {
           email: targetEmail,
           name: existing.name || name,
           avatarUrl: existing.avatarUrl || avatarUrl,
+          idToken: profile.idToken,
           role: existing.role,
         });
         setSuccessMessage(`Welcome back! Logged in as ${existing.role === 'BUYER' ? 'Buyer' : 'Seller'}.`);
@@ -233,6 +314,7 @@ export function AuthModal() {
         email: targetEmail,
         name,
         avatarUrl,
+        idToken: profile.idToken,
       });
       setChosenRole(targetEmail.includes('buyer') || targetEmail.includes('freshmart') ? 'BUYER' : 'FARMER');
       setStep('ROLE_SELECTION');
@@ -242,6 +324,72 @@ export function AuthModal() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const triggerGoogleSignIn = () => {
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    if (!clientId) {
+      setLoading(false);
+      setErrorMessage('Google Client ID is not configured in environment variables. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID.');
+      return;
+    }
+
+    // Method 1: Google OAuth2 Token Client Popup (Official Account Chooser)
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2) {
+      try {
+        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              setLoading(false);
+              setErrorMessage(tokenResponse.error_description || 'Google sign-in was cancelled.');
+              return;
+            }
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+              });
+              if (!res.ok) throw new Error('Could not fetch user profile from Google');
+              const profile = await res.json();
+              await handleGoogleProfileReceived({
+                email: profile.email,
+                name: profile.name || profile.given_name || profile.email.split('@')[0],
+                avatarUrl: profile.picture,
+              });
+            } catch (fetchErr: any) {
+              setErrorMessage(fetchErr?.message || 'Failed to obtain Google account details.');
+              setLoading(false);
+            }
+          },
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (clientErr) {
+        console.warn('GIS Token client error, falling back:', clientErr);
+      }
+    }
+
+    // Method 2: Google One Tap Prompt
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setLoading(false);
+          }
+        });
+        return;
+      } catch (promptErr) {
+        console.warn('GIS Prompt error:', promptErr);
+      }
+    }
+
+    setLoading(false);
+    setErrorMessage('Google Identity Client is connecting. You can also pick a 1-click test profile below.');
   };
 
   const handleCompleteAccountCreation = async (e?: React.FormEvent) => {
@@ -255,6 +403,7 @@ export function AuthModal() {
         email: pendingGoogleUser.email,
         name: pendingGoogleUser.name,
         avatarUrl: pendingGoogleUser.avatarUrl,
+        idToken: pendingGoogleUser.idToken,
         role: chosenRole,
       });
 
@@ -768,33 +917,15 @@ export function AuthModal() {
                 </p>
               </div>
 
-              {/* Google Email Input Form */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleGoogleLogin();
-                }}
-                className="space-y-3"
-              >
-                <div>
-                  <label className="block text-xs font-bold text-neutral-700 mb-1.5">
-                    Your Google Account Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
-                    <input
-                      type="email"
-                      required
-                      value={googleEmailInput}
-                      onChange={(e) => setGoogleEmailInput(e.target.value)}
-                      placeholder="e.g. yourname@gmail.com"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#ef4d23]/20 focus:border-[#ef4d23]"
-                    />
-                  </div>
-                </div>
+              {/* Google Identity Services Integration */}
+              <div className="flex flex-col items-center justify-center gap-2.5 pt-1">
+                {/* Official Google Identity Services Rendered Slot */}
+                <div id="google-gis-container" className="flex justify-center min-h-[44px]" />
 
+                {/* Branded Continue with Google Button */}
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={triggerGoogleSignIn}
                   disabled={loading}
                   className="w-full py-3 px-4 bg-white border-2 border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 text-neutral-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-3 shadow-sm hover:shadow transition-all group disabled:opacity-60"
                 >
@@ -816,9 +947,9 @@ export function AuthModal() {
                       d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.4-6.7-5.3L1.6 16c1.9 3.8 5.8 6.4 10.4 6.4z"
                     />
                   </svg>
-                  <span>{loading ? 'Authenticating with Google...' : 'Continue with Google'}</span>
+                  <span>{loading ? 'Connecting to Google...' : 'Continue with Google'}</span>
                 </button>
-              </form>
+              </div>
 
               {/* Quick Select Google Profiles */}
               <div className="pt-2">
@@ -831,10 +962,13 @@ export function AuthModal() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setGoogleEmailInput('krishisetu.in@gmail.com');
-                      handleGoogleLogin('krishisetu.in@gmail.com');
-                    }}
+                    onClick={() =>
+                      handleGoogleProfileReceived({
+                        email: 'krishisetu.in@gmail.com',
+                        name: 'KrishiSetu Admin',
+                        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
+                      })
+                    }
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
                   >
@@ -844,10 +978,13 @@ export function AuthModal() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setGoogleEmailInput('ramesh.kumar@gmail.com');
-                      handleGoogleLogin('ramesh.kumar@gmail.com');
-                    }}
+                    onClick={() =>
+                      handleGoogleProfileReceived({
+                        email: 'ramesh.kumar@gmail.com',
+                        name: 'Ramesh Kumar',
+                        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
+                      })
+                    }
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
                   >
@@ -857,10 +994,13 @@ export function AuthModal() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setGoogleEmailInput('freshmart.procure@gmail.com');
-                      handleGoogleLogin('freshmart.procure@gmail.com');
-                    }}
+                    onClick={() =>
+                      handleGoogleProfileReceived({
+                        email: 'freshmart.procure@gmail.com',
+                        name: 'FreshMart Procurement',
+                        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
+                      })
+                    }
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-neutral-200 hover:border-[#ef4d23]/40 hover:bg-neutral-50 text-left transition-all group"
                   >
@@ -871,9 +1011,11 @@ export function AuthModal() {
                   <button
                     type="button"
                     onClick={() => {
-                      const demoEmail = `user.${Date.now().toString().slice(-4)}@gmail.com`;
-                      setGoogleEmailInput(demoEmail);
-                      handleGoogleLogin(demoEmail);
+                      const demoId = Date.now().toString().slice(-4);
+                      handleGoogleProfileReceived({
+                        email: `farmer.user${demoId}@gmail.com`,
+                        name: `Farmer User ${demoId}`,
+                      });
                     }}
                     disabled={loading}
                     className="p-2.5 rounded-xl border border-dashed border-[#ef4d23]/50 bg-[#ef4d23]/5 hover:bg-[#ef4d23]/10 text-left transition-all group"
