@@ -22,12 +22,13 @@ import {
   BarChart3,
   CheckCircle2,
   KeyRound,
+  LogOut,
 } from 'lucide-react';
 import { AuthModal } from '../auth/AuthModal';
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { role, user, switchRole, resetDemo, isResetting, isDemoMode, openAuthModal } = useAuth();
+  const { role, user, switchRole, resetDemo, isResetting, isDemoMode, isAuthenticated, logout, openAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
@@ -242,7 +243,7 @@ export function AppHeader() {
               </div>
             )}
           </div>
-        ) : (
+        ) : isAuthenticated && user ? (
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-neutral-200 text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="font-semibold text-neutral-800">{user.name}</span>
@@ -250,27 +251,40 @@ export function AppHeader() {
               {role}
             </span>
           </div>
-        )}
+        ) : null}
 
-          {/* User badge */}
+        {/* User location badge (authenticated only) */}
+        {isAuthenticated && user && (
           <div className="hidden lg:flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-neutral-200 text-xs">
-            <span className="font-bold text-neutral-900">{user.name}</span>
-            <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">
-              {user.district || 'Pune'}
+            <span className="text-neutral-600 text-[11px] font-medium">
+              {user.district || user.village || 'Pune'}
             </span>
           </div>
+        )}
 
-          {/* Sign In / OTP Access trigger */}
+        {/* Auth Button: Logout if authenticated, Sign In if guest */}
+        {isAuthenticated && user && !isDemoMode ? (
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-colors shadow-xs"
+            title="Sign out of your account"
+          >
+            <LogOut className="w-3.5 h-3.5 text-neutral-500" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        ) : (
           <button
             type="button"
             onClick={openAuthModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#09090b] text-white hover:bg-neutral-800 transition-colors shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#09090b] text-white hover:bg-neutral-800 transition-colors shadow-xs"
             title="Sign in with Email OTP, Password, or Google"
           >
             <KeyRound className="w-3.5 h-3.5 text-[#ef4d23]" />
             <span className="hidden sm:inline">Sign In / OTP</span>
-            <span className="sm:hidden">OTP</span>
+            <span className="sm:hidden">Sign In</span>
           </button>
+        )}
 
           {/* Mobile hamburger */}
           <button

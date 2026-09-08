@@ -27,7 +27,7 @@ interface AppShellProps {
 
 export function AppShell({ title, subtitle, badge, actions, children }: AppShellProps) {
   const pathname = usePathname();
-  const { role } = useAuth();
+  const { role, isDemoMode, isAuthenticated, openAuthModal } = useAuth();
 
   // Mobile Bottom Bar items
   const farmerBottomLinks = [
@@ -64,6 +64,32 @@ export function AppShell({ title, subtitle, badge, actions, children }: AppShell
     <div className="min-h-screen bg-[#ededed] text-neutral-900 flex flex-col font-inter selection:bg-[#ef4d23]/20 selection:text-[#ef4d23] pb-16 md:pb-0">
       {/* Universal Floating Header */}
       <AppHeader />
+
+      {/* Guest Mode Notice in Production */}
+      {!isDemoMode && !isAuthenticated && (
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4 text-amber-700" />
+              </div>
+              <div>
+                <div className="font-bold text-xs sm:text-sm text-amber-950">You are browsing as Guest</div>
+                <div className="text-amber-800 text-[11px] sm:text-xs">
+                  Viewing market data and decision intelligence. Sign in with OTP or Google to register your harvest lots and execute contracts.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="px-3.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-semibold shrink-0 transition-colors text-xs"
+            >
+              Sign In / OTP →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Page Title & Context Header */}
       {(title || subtitle) && (

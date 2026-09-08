@@ -18,21 +18,23 @@ import {
   CheckCircle2,
   Scale,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FarmerDashboard() {
+  const { user, isDemoMode, isAuthenticated } = useAuth();
   const [showNRPModal, setShowNRPModal] = useState(false);
   const [showNegotiateModal, setShowNegotiateModal] = useState(false);
 
-  // Canonical Data from Domain Engine (Single Source of Truth)
+  // Data from Domain Engine
   const lot = {
     id: 'demo-lot-ramesh-18qtl',
-    farmerName: 'Ramesh Kumar',
+    farmerName: isDemoMode ? 'Ramesh Kumar' : (isAuthenticated && user?.name ? user.name : 'Verified Farmer'),
     commodity: 'Tomato',
     variety: 'Hybrid',
     grade: 'A',
     quantityQtl: 18,
     harvestDate: 'Sep 6, 2026',
-    location: 'Dehu Road Cluster, Haveli, Pune',
+    location: isDemoMode ? 'Dehu Road Cluster, Haveli, Pune' : (isAuthenticated && (user?.district || user?.village) ? `${user?.village ? user.village + ', ' : ''}${user?.district || 'Pune'}, Maharashtra` : 'Haveli, Pune'),
   };
 
   const topOpportunity = {
@@ -75,11 +77,23 @@ export default function FarmerDashboard() {
 
   const netGainPaise = topOpportunity.totalRealizedPaise - baseline.totalRealizedPaise; // ₹5,457.60
 
+  const dashboardTitle = isDemoMode
+    ? 'What should I do today, Ramesh?'
+    : isAuthenticated && user?.name
+    ? `What should I do today, ${user.name.split(' ')[0]}?`
+    : 'Farmer Command Center';
+
+  const dashboardSubtitle = isDemoMode
+    ? 'Your canonical 18 Quintal Tomato Hybrid harvest is evaluated against 7 market channels in real time.'
+    : isAuthenticated
+    ? 'Your harvest lots evaluated against real-time market channels across Pune & Maharashtra.'
+    : 'Evaluating market opportunities and net practical returns across 7 verified channels in real time.';
+
   return (
     <AppShell
       badge="Farmer Command Center"
-      title="What should I do today, Ramesh?"
-      subtitle="Your canonical 18 Quintal Tomato Hybrid harvest is evaluated against 7 market channels in real time."
+      title={dashboardTitle}
+      subtitle={dashboardSubtitle}
       actions={
         <div className="flex items-center gap-2">
           <Link

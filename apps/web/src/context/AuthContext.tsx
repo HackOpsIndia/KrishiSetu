@@ -78,9 +78,10 @@ const CANONICAL_USERS: Record<UserRole, UserProfile> = {
 };
 
 interface AuthContextType {
-  user: UserProfile;
+  user: UserProfile | null;
   role: UserRole;
   status: AccountStatus;
+  isAuthenticated: boolean;
   setRole: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
   loginWithPassword: (email: string, pass: string) => Promise<any>;
@@ -103,7 +104,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<UserRole>('FARMER');
-  const [user, setUser] = useState<UserProfile>(CANONICAL_USERS.FARMER);
+  const [user, setUser] = useState<UserProfile | null>(() => isDemoEnvironment() ? CANONICAL_USERS.FARMER : null);
   const [token, setToken] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => isDemoEnvironment());
@@ -115,11 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsDemoMode(envDemo);
 
     if (typeof window !== 'undefined') {
-      const savedRole = localStorage.getItem('krishisetu_active_role') as UserRole;
-      if (savedRole && CANONICAL_USERS[savedRole]) {
-        setRoleState(savedRole);
-        setUser(CANONICAL_USERS[savedRole]);
+      const savedToken = localStorage.getItem('krishisetu_token');
+      if (savedToken) {
+        setToken(savedToken);
       }
+
       const savedUser = localStorage.getItem('krishisetu_user');
       if (savedUser) {
         try {
@@ -129,10 +130,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRoleState(parsed.role);
           }
         } catch {}
-      }
-      const savedToken = localStorage.getItem('krishisetu_token');
-      if (savedToken) {
-        setToken(savedToken);
+      } else if (envDemo) {
+        const savedRole = localStorage.getItem('krishisetu_active_role') as UserRole;
+        if (savedRole && CANONICAL_USERS[savedRole]) {
+          setRoleState(savedRole);
+          setUser(CANONICAL_USERS[savedRole]);
+        } else {
+          setUser(CANONICAL_USERS.FARMER);
+        }
+      } else {
+        setUser(null);
       }
     }
 
@@ -211,11 +218,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
+  const isAuthenticated = isDemoMode ? true : (!!token && !!user);
+
   const logout = () => {
     api.clearToken();
     setToken(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('krishisetu_token');
+      localStorage.removeItem('krishisetu_user');
+      localStorage.removeItem('krishisetu_active_role');
+    }
     if (isDemoMode) {
       switchRole('FARMER');
+    } else {
+      setUser(null);
     }
   };
 
@@ -235,9 +251,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user || (isDemoMode ? CANONICAL_USERS[role] : null),
         role,
-        status: user.status || 'ACTIVE',
+        status: user?.status || 'ACTIVE',
+        isAuthenticated,
         setRole: switchRole,
         switchRole,
         loginWithPassword,
