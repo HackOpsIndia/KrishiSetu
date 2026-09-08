@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NRPService } from '../domain/nrp.service';
 import { ImpactService } from '../domain/impact.service';
 import { EmailService } from '../email/email.service';
+import { inMemoryUsers } from '../auth/auth.service';
 import { isValidTransactionTransition, TransactionStatus, ChannelType, NRPInput } from '@krishisetu/shared';
 import { TRANSACTION_TRANSITIONS, DEMO_NRP_CONFIG } from '@krishisetu/shared';
 
@@ -44,6 +45,31 @@ export class TransactionsService {
     private impactService: ImpactService,
     private emailService: EmailService,
   ) {}
+
+  /**
+   * Dynamically resolve the email and name for a transaction participant.
+   * Checks PostgreSQL first, falls back to in-memory user store.
+   */
+  private async resolveUserContact(userId: string): Promise<{ email: string; name: string }> {
+    // 1. Try PostgreSQL if connected
+    if (this.prisma.isConnected) {
+      try {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (user) return { email: user.email, name: user.name };
+      } catch {}
+    }
+
+    // 2. Search in-memory user store by ID
+    for (const [, u] of inMemoryUsers) {
+      if (u.id === userId) return { email: u.email, name: u.name };
+    }
+
+    // 3. Fallback for demo transactions
+    if (userId === 'farmer-ramesh') return { email: 'ramesh@demo.in', name: 'Ramesh Kumar' };
+    if (userId === 'buyer-freshmart') return { email: 'freshmart@demo.in', name: 'FreshMart Foods' };
+
+    return { email: 'unknown@krishisetu.in', name: 'KrishiSetu User' };
+  }
 
   async findById(id: string) {
     if (!this.prisma.isConnected || id.startsWith('tx-demo')) {
@@ -127,14 +153,16 @@ export class TransactionsService {
       });
       this.demoTransactions.set(tx.id, tx);
 
-      // Safe notification
-      this.emailService.sendTransactionUpdate('ramesh@demo.in', {
-        recipientName: 'Ramesh Kumar',
-        transactionId: tx.id,
-        commodityName: tx.lot?.commodityName || 'Tomato',
-        quantityQtl: tx.quantity || 18,
-        status: newStatus,
-        note,
+      // Dynamic notification to actual farmer
+      this.resolveUserContact(tx.farmerUserId).then(farmer => {
+        this.emailService.sendTransactionUpdate(farmer.email, {
+          recipientName: farmer.name,
+          transactionId: tx.id,
+          commodityName: tx.lot?.commodityName || 'Tomato',
+          quantityQtl: tx.quantity || 18,
+          status: newStatus,
+          note,
+        }).catch(() => {});
       }).catch(() => {});
 
       return tx;
@@ -171,14 +199,16 @@ export class TransactionsService {
         });
       }
 
-      // Safe notification
-      this.emailService.sendTransactionUpdate('ramesh@demo.in', {
-        recipientName: 'Ramesh Kumar',
-        transactionId: tx.id,
-        commodityName: tx.lot?.commodityName || 'Tomato',
-        quantityQtl: tx.quantity || 18,
-        status: newStatus,
-        note,
+      // Dynamic notification to actual farmer
+      this.resolveUserContact(tx.farmerUserId).then(farmer => {
+        this.emailService.sendTransactionUpdate(farmer.email, {
+          recipientName: farmer.name,
+          transactionId: tx.id,
+          commodityName: tx.lot?.commodityName || 'Tomato',
+          quantityQtl: tx.quantity || 18,
+          status: newStatus,
+          note,
+        }).catch(() => {});
       }).catch(() => {});
 
       return updated;
@@ -258,15 +288,17 @@ export class TransactionsService {
       });
       this.demoTransactions.set(tx.id, tx);
 
-      // Safe notification
-      this.emailService.sendPaymentNotification('ramesh@demo.in', {
-        recipientName: 'Ramesh Kumar',
-        transactionId,
-        amount: paymentAmount / 100,
-        status: 'SUCCESS',
-        referenceNumber: `PAY-${transactionId.slice(0, 8).toUpperCase()}`,
-        method: 'Direct Escrow Settlement (T+1)',
-        paidAt: new Date(),
+      // Dynamic notification to actual farmer
+      this.resolveUserContact(tx.farmerUserId).then(farmer => {
+        this.emailService.sendPaymentNotification(farmer.email, {
+          recipientName: farmer.name,
+          transactionId,
+          amount: paymentAmount / 100,
+          status: 'SUCCESS',
+          referenceNumber: `PAY-${transactionId.slice(0, 8).toUpperCase()}`,
+          method: 'Direct Escrow Settlement (T+1)',
+          paidAt: new Date(),
+        }).catch(() => {});
       }).catch(() => {});
 
       return { payment, idempotent: false };
@@ -305,15 +337,17 @@ export class TransactionsService {
         data: { status: 'COMPLETED' },
       });
 
-      // Safe notification
-      this.emailService.sendPaymentNotification('ramesh@demo.in', {
-        recipientName: 'Ramesh Kumar',
-        transactionId,
-        amount: paymentAmount / 100,
-        status: 'SUCCESS',
-        referenceNumber: `PAY-${transactionId.slice(0, 8).toUpperCase()}`,
-        method: 'Direct Escrow Settlement (T+1)',
-        paidAt: new Date(),
+      // Dynamic notification to actual farmer
+      this.resolveUserContact(tx.farmerUserId).then(farmer => {
+        this.emailService.sendPaymentNotification(farmer.email, {
+          recipientName: farmer.name,
+          transactionId,
+          amount: paymentAmount / 100,
+          status: 'SUCCESS',
+          referenceNumber: `PAY-${transactionId.slice(0, 8).toUpperCase()}`,
+          method: 'Direct Escrow Settlement (T+1)',
+          paidAt: new Date(),
+        }).catch(() => {});
       }).catch(() => {});
 
       return p;

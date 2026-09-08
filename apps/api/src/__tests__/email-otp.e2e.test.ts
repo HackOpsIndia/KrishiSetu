@@ -42,6 +42,8 @@ describe('Email OTP & SMTP Notification E2E Suite', () => {
     process.env.DEMO_MODE = 'true';
     process.env.ADMIN_EMAILS = 'admin@demo.in,superadmin@krishisetu.in';
     process.env.OTP_RESEND_COOLDOWN_SECONDS = '60';
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASSWORD;
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -54,6 +56,7 @@ describe('Email OTP & SMTP Notification E2E Suite', () => {
 
     authService = app.get<AuthService>(AuthService);
     emailService = app.get<EmailService>(EmailService);
+    emailService.setSimulated(true);
   });
 
   afterAll(async () => {
@@ -435,19 +438,23 @@ describe('Email OTP & SMTP Notification E2E Suite', () => {
 
   // 17. Production mode requires valid SMTP configuration
   test('17. Production mode safely detects and reports unconfigured SMTP', async () => {
-    // Temporarily simulate production mode with unconfigured SMTP
-    process.env.DEMO_MODE = 'false';
-    const prodResult = await emailService.sendEmail({
-      to: 'prod.test@krishisetu.gov.in',
-      subject: 'Production SMTP Verification',
-      html: '<p>Test</p>',
-    });
+    try {
+      // Temporarily simulate production mode with unconfigured SMTP
+      process.env.DEMO_MODE = 'false';
+      emailService.setSimulated(true);
+      const prodResult = await emailService.sendEmail({
+        to: 'prod.test@krishisetu.gov.in',
+        subject: 'Production SMTP Verification',
+        html: '<p>Test</p>',
+      });
 
-    expect(prodResult.success).toBe(false);
-    expect(prodResult.error).toContain('Production SMTP delivery failure');
-
-    // Restore demo mode
-    process.env.DEMO_MODE = 'true';
+      expect(prodResult.success).toBe(false);
+      expect(prodResult.error).toContain('Production SMTP delivery failure');
+    } finally {
+      // Restore demo mode
+      process.env.DEMO_MODE = 'true';
+      emailService.setSimulated(true);
+    }
   });
 
   // 18. Email service failure does not corrupt transaction state

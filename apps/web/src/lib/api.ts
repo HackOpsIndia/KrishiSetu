@@ -3,7 +3,22 @@
 // Frontend NEVER calculates financial values — API provides them.
 // ============================================================
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:4000';
+    }
+    // On hosted domains (such as Vercel preview/production), use same-origin relative endpoints
+    return '';
+  }
+  return 'http://localhost:4000';
+}
+
+const API_BASE = getApiBase();
 
 class ApiClient {
   private token: string | null = null;

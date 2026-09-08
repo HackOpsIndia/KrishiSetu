@@ -95,6 +95,18 @@ export class EmailService implements OnModuleInit {
   }
 
   /**
+   * Explicitly toggle simulated delivery mode (used in test suites or offline environments).
+   */
+  public setSimulated(simulated: boolean) {
+    if (simulated) {
+      this.transporter = null;
+      this.isConfigured = false;
+    } else {
+      this.initializeTransporter();
+    }
+  }
+
+  /**
    * Whether the system is running in demo mode
    */
   public get isDemoMode(): boolean {
