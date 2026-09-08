@@ -1,10 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+export type ExtendedPrismaClient = PrismaClient & {
+  opportunityRecord: any;
 };
 
-function createPrismaClient(): PrismaClient {
+const globalForPrisma = globalThis as unknown as {
+  prisma: ExtendedPrismaClient | undefined;
+};
+
+function createPrismaClient(): ExtendedPrismaClient {
   const connectionString =
     process.env.POSTGRES_PRISMA_URL ||
     process.env.DATABASE_URL ||
@@ -19,10 +23,10 @@ function createPrismaClient(): PrismaClient {
         }
       : undefined,
     log: ['error'],
-  });
+  }) as unknown as ExtendedPrismaClient;
 }
 
-function getPrisma(): PrismaClient {
+function getPrisma(): ExtendedPrismaClient {
   if (!globalForPrisma.prisma) {
     try {
       globalForPrisma.prisma = createPrismaClient();
@@ -33,10 +37,10 @@ function getPrisma(): PrismaClient {
       console.warn('[PrismaClient] Lazy initialization deferred:', err?.message);
     }
   }
-  return globalForPrisma.prisma as PrismaClient;
+  return globalForPrisma.prisma as ExtendedPrismaClient;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
+export const prisma: ExtendedPrismaClient = new Proxy({} as ExtendedPrismaClient, {
   get(_target, prop) {
     const instance = getPrisma();
     if (!instance) return () => Promise.resolve(null);
