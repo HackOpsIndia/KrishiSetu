@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Automate your work — Focus on what matters</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    (function() {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('motion-pending');
+        window.__motionFailSafe = setTimeout(function() {
+          document.documentElement.classList.remove('motion-pending');
+        }, 2400);
+      }
+    })();
+  </script>
+
+  <style>
+    /* RESET & BASE */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: min(calc(95vw / 1374), calc(94vh / 666));
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      background-color: #f0f0f0;
+      color: #141414;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* DESKTOP STAGE GRID */
+    .stage {
+      width: 1374rem;
+      height: 666rem;
+      display: grid;
+      grid-template-columns: 339rem 627rem 388rem;
+      grid-template-rows: 149rem 343rem 156rem;
+      column-gap: 10rem;
+      row-gap: 9rem;
+      position: relative;
+    }
+
+    /* SHARED CARD CHROME */
+    .card {
+      border-radius: 22rem;
+      border: 1.6rem solid rgba(255, 255, 255, 0.92);
+      overflow: hidden;
+      box-shadow: 0 2rem 16rem rgba(24, 30, 45, 0.045);
+      position: relative;
+    }
+
+    /* CARD 1 — NOTIFICATION */
+    .notif {
+      grid-column: 1;
+      grid-row: 1;
+      background:
+        radial-gradient(120% 140% at 92% 100%, rgba(255, 236, 246, 0.95) 0%, rgba(255, 236, 246, 0) 62%),
+        linear-gradient(135deg, #f9d9e9 0%, #fbdfec 55%, #fce6f1 100%);
+      padding: 37rem 12rem 0 11rem;
+    }
+
+    .toast-wrap {
+      position: relative;
+      height: 70rem;
+      width: 100%;
+    }
+
+    .toast-ledge {
+      position: absolute;
+      left: 24rem;
+      right: 20rem;
+      top: 55rem;
+      height: 23rem;
+      border-radius: 14rem;
+      background: linear-gradient(100deg, #e6e6e6 0%, #e6e3e2 42%, #e5d6d6 74%, #e4cdcf 100%);
+      box-shadow: 0 3rem 9rem rgba(120, 80, 100, 0.09);
+      z-index: 1;
+    }
+
+    .toast {
+      position: absolute;
+      inset: 0;
+      height: 70rem;
+      border-radius: 16rem;
+      background: linear-gradient(105deg, #ffffff 34%, #fdeee5 78%, #fce8dd 100%);
+      box-shadow: 0 3rem 10rem rgba(122, 86, 106, 0.10);
+      display: flex;
+      align-items: center;
+      padding: 0 12rem 0 13rem;
+      gap: 11rem;
+      z-index: 2;
+    }
+
+    .toast-icon {
+      width: 27rem;
+      height: 27rem;
+      flex-shrink: 0;
+    }
+
+    .toast-center {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toast-title {
+      font-size: 11.2rem;
+      font-weight: 800;
+      letter-spacing: -0.012em;
+      line-height: 1.1;
+      color: #0d0d0d;
+    }
+
+    .toast-sub {
+      font-size: 10rem;
+      font-weight: 400;
+      line-height: 1.28;
+      letter-spacing: -0.005em;
+      color: #2b2b2b;
+      max-width: 118rem;
+      margin-top: 3.6rem;
+    }
+
+    .toast-time {
+      font-size: 7.4rem;
+      font-weight: 500;
+      color: #8b8489;
+      align-self: flex-start;
+      margin-top: 12rem;
+      margin-left: auto;
+      letter-spacing: 0.005em;
+      white-space: nowrap;
+    }
+
+    /* CARD 2 — CONNECT YOUR TOOLS */
+    .connect {
+      grid-column: 1;
+      grid-row: 2 / span 2;
+      background: linear-gradient(180deg, #fcfdfd 0%, #f4f7f9 30%, #e2ebef 66%, #cedce4 100%);
+      padding: 32rem 0 0 20rem;
+    }
+
+    .connect h2 {
+      font-size: 28rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.028em;
+      color: #0c0c0c;
+    }
+
+    .connect .sub {
+      margin-top: 14rem;
+      font-size: 17rem;
+      font-weight: 400;
+      line-height: 1.3;
+      letter-spacing: -0.013em;
+      color: #1c1c1c;
+    }
+
+    .chips-container {
+      position: absolute;
+      left: 11rem;
+      right: 16rem;
+      bottom: 13rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8rem;
+      z-index: 2;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 14rem;
+      align-items: center;
+    }
+
+    .chip-row.r2 {
+      padding-left: 10rem;
+    }
+
+    .chip {
+      height: 42rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10rem;
+      padding: 0 17rem;
+      border-radius: 999rem;
+      background: linear-gradient(180deg, rgba(247, 253, 255, 0.97) 0%, rgba(240, 250, 254, 0.93) 100%);
+      box-shadow: 0 0 0 3rem rgba(0, 0, 0, 0.047);
+      backdrop-filter: blur(7rem);
+      -webkit-backdrop-filter: blur(7rem);
+      font-size: 18rem;
+      font-weight: 500;
+      letter-spacing: -0.018em;
+      color: #131313;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .chip svg {
+      width: 21rem;
+      height: 21rem;
+      flex-shrink: 0;
+    }
+
+    .chip-slack {
+      position: absolute;
+      right: 6rem;
+      bottom: 124rem;
+      transform: rotate(-20deg);
+      z-index: 3;
+      box-shadow: 0 0 0 3.2rem rgba(0, 0, 0, 0.052);
+    }
+
+    /* CARD 3 — AUTOMATE YOUR WORK */
+    .automate {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      background:
+        radial-gradient(90% 70% at 6% 0%, rgba(226, 236, 200, 0.9) 0%, rgba(226, 236, 200, 0) 70%),
+        linear-gradient(168deg, #e2ebc9 0%, #e9f0c4 48%, #f0f4b8 78%, #f3f5b0 100%);
+    }
+
+    .automate-copy {
+      padding: 37rem 0 0 45rem;
+      position: relative;
+      z-index: 3;
+    }
+
+    .automate h2 {
+      font-size: 35rem;
+      font-weight: 800;
+      line-height: 1.43;
+      letter-spacing: -0.03em;
+      color: #15201a;
+    }
+
+    .automate h2 .g {
+      color: #5f8b3e;
+    }
+
+    .automate .sub {
+      margin-top: 13rem;
+      font-size: 17rem;
+      font-weight: 400;
+      line-height: 1.3;
+      letter-spacing: -0.014em;
+      color: #1e2a1b;
+    }
+
+    .illo {
+      position: absolute;
+      inset: 0;
+      width: 627rem;
+      height: 501rem;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .win {
+      border-radius: 11rem;
+      border: 3rem solid #fff;
+      overflow: hidden;
+      box-shadow: 0 12rem 28rem rgba(64, 74, 44, 0.16);
+      position: absolute;
+    }
+
+    .win-bar {
+      height: 13.4rem;
+      background: #242424;
+      display: flex;
+      align-items: center;
+      gap: 4.6rem;
+      padding-left: 4.9rem;
+    }
+
+    .traffic-dot {
+      width: 6rem;
+      height: 6rem;
+      border-radius: 50%;
+      background: linear-gradient(150deg, #fff 0%, #f6f6f6 50%, #dcdcdc 100%);
+    }
+
+    .win-back {
+      left: 121.2rem;
+      top: 245.2rem;
+      width: 324rem;
+      height: 250rem;
+      transform: rotate(-7.02deg);
+      background: #eaefcd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .win-back-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+
+    .win-back-strip {
+      width: 23.7%;
+      height: 100%;
+      background: #bfd0ac;
+    }
+
+    .win-front {
+      left: 180.4rem;
+      top: 283.3rem;
+      width: 322rem;
+      height: 250rem;
+      transform: rotate(4.23deg);
+      border-bottom: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      box-shadow: 0 14rem 32rem rgba(64, 74, 44, 0.18);
+      background: #f9edfb;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .win-front-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+
+    .win-front-strip {
+      width: 16%;
+      height: 100%;
+      background: #e8d6fb;
+    }
+
+    .pill-wf {
+      position: absolute;
+      left: 395rem;
+      top: 349rem;
+      height: 30rem;
+      display: flex;
+      align-items: center;
+      gap: 7rem;
+      padding: 0 14rem 0 6rem;
+      border-radius: 999rem;
+      background: #fff;
+      box-shadow: 0 0 0 2.8rem rgba(0, 0, 0, 0.045);
+      transform: rotate(-1.2deg);
+      z-index: 4;
+      font-size: 11.5rem;
+      font-weight: 600;
+      letter-spacing: -0.014em;
+      color: #151515;
+      white-space: nowrap;
+    }
+
+    .tick-disc {
+      width: 20rem;
+      height: 20rem;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(255, 255, 255, 0) 70%),
+                  linear-gradient(145deg, #e6f3df 0%, #cfe0bd 47%, #b9cfa5 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pill-ai {
+      position: absolute;
+      left: 68rem;
+      top: 404rem;
+      width: 144rem;
+      height: 52rem;
+      border-radius: 10rem;
+      background: #fff;
+      box-shadow: 0 0 0 2.8rem rgba(0, 0, 0, 0.045);
+      display: flex;
+      align-items: center;
+      gap: 9rem;
+      padding: 0 16rem;
+      transform: rotate(-1deg);
+      z-index: 4;
+    }
+
+    .ai-skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: 8rem;
+      flex: 1;
+    }
+
+    .ai-line-1 {
+      height: 6.5rem;
+      border-radius: 99rem;
+      background: #d8d8d7;
+      width: 100%;
+    }
+
+    .ai-line-2 {
+      height: 6.5rem;
+      border-radius: 99rem;
+      background: #d8d8d7;
+      width: 60%;
+    }
+
+    .cursor {
+      position: absolute;
+      left: 490rem;
+      top: 454rem;
+      width: 30rem;
+      height: 35rem;
+      z-index: 5;
+    }
+
+    /* CARD 4 — PRODUCTIVITY INSIGHTS */
+    .insights {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+      background:
+        radial-gradient(115% 70% at 22% 0%, #fdf2e5 0%, rgba(253, 242, 229, 0) 68%),
+        linear-gradient(180deg, #f9f1e8 0%, #f7efe6 100%);
+      padding: 29rem 25rem 23rem 21rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .insights .tag {
+      height: 31rem;
+      padding: 0 17rem;
+      border-radius: 999rem;
+      margin-left: 4rem;
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      background: linear-gradient(100deg, #ffffff 18%, #fdeadb 100%);
+      border: 1.2rem solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 3rem 9rem rgba(160, 120, 80, 0.09);
+      font-size: 12rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #111;
+      white-space: nowrap;
+    }
+
+    .insights h2 {
+      margin-top: 22rem;
+      font-size: 37rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1;
+      color: #0b0b0b;
+    }
+
+    .insights .sub {
+      margin-top: 12rem;
+      font-size: 14.5rem;
+      font-weight: 400;
+      letter-spacing: -0.012em;
+      color: #1d1d1d;
+    }
+
+    .chart {
+      margin-top: auto;
+      height: 294rem;
+      display: flex;
+      align-items: flex-end;
+      gap: 13rem;
+      width: 100%;
+    }
+
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar {
+      width: 100%;
+      background: #e9e3da;
+      border-radius: 7rem;
+      padding-top: 9rem;
+      color: #a1978a;
+      font-size: 13rem;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .bar-sun {
+      background: linear-gradient(180deg, #f2b705 0%, #e7b208 26%, #a8a422 52%, #6a8f33 76%, #3d7a3e 100%);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4rem 12rem rgba(150, 120, 20, 0.20);
+    }
+
+    .day-lbl {
+      font-size: 10.4rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: #a79c8e;
+      margin-top: 10rem;
+      text-align: center;
+    }
+
+    /* CARD 5 — SEARCH */
+    .search {
+      grid-column: 2 / span 2;
+      grid-row: 3;
+      background: linear-gradient(103deg, #eae9f5 0%, #e2e0f1 34%, #cfcdea 72%, #c2c0e6 100%);
+      display: flex;
+      align-items: center;
+      padding-left: 46rem;
+      padding-right: 25rem;
+    }
+
+    .search h2 {
+      font-size: 23rem;
+      font-weight: 800;
+      line-height: 1.39;
+      letter-spacing: -0.028em;
+      color: #0d0d10;
+      white-space: nowrap;
+    }
+
+    .bar-search {
+      margin-left: auto;
+      width: 612rem;
+      height: 64rem;
+      border-radius: 999rem;
+      background: #fff;
+      box-shadow: 0 4rem 14rem rgba(70, 66, 120, 0.10);
+      display: flex;
+      align-items: center;
+      padding: 0 22rem 0 10rem;
+      gap: 16rem;
+    }
+
+    .mag-circle {
+      width: 44rem;
+      height: 44rem;
+      border-radius: 50%;
+      background: #f1f1f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .search-input-placeholder {
+      font-size: 16.5rem;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      color: #8c8c99;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .mic-icon {
+      margin-left: auto;
+      width: 16rem;
+      height: 20rem;
+      flex-shrink: 0;
+    }
+
+    /* TABLET RESPONSIVE */
+    @media (min-width: 701px) and (max-width: 1040px) and (max-aspect-ratio: 3/2) {
+      html {
+        font-size: min(calc(95vw / 1025), calc(94vh / 918));
+      }
+
+      .stage {
+        width: 1025rem;
+        height: 918rem;
+        grid-template-columns: 627rem 388rem;
+        grid-template-rows: 505rem 194rem 201rem;
+      }
+
+      .automate {
+        grid-column: 1;
+        grid-row: 1;
+        height: 501rem;
+      }
+
+      .notif {
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20rem;
+      }
+
+      .notif .toast-wrap {
+        width: 380rem;
+        max-width: calc(100% - 24rem);
+      }
+
+      .search {
+        grid-column: 1;
+        grid-row: 3;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 20rem;
+      }
+
+      .search .bar-search {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 22rem;
+      }
+
+      .insights {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .connect {
+        grid-column: 2;
+        grid-row: 2 / span 2;
+      }
+
+      .toast-title { font-size: 13rem; }
+      .toast-sub { font-size: 11.5rem; }
+      .insights .tag { font-size: 13.5rem; }
+      .bar { font-size: 14rem; }
+      .day-lbl { font-size: 11.5rem; }
+    }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 700px) {
+      html {
+        font-size: calc((min(100vw, 560px) - 30px) / 375);
+      }
+
+      body {
+        display: block;
+        min-height: 100vh;
+        overflow-y: auto;
+        padding: 15px 0;
+      }
+
+      .stage {
+        width: 375rem;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        row-gap: 13rem;
+        margin: 0 auto;
+      }
+
+      .notif {
+        height: 149rem;
+      }
+
+      .connect {
+        height: 508rem;
+      }
+
+      .insights {
+        height: 500rem;
+      }
+
+      .automate {
+        height: 298rem;
+      }
+
+      .automate .illo {
+        transform: scale(0.5981);
+        transform-origin: 0 0;
+      }
+
+      .automate h2 {
+        font-size: 24rem;
+        line-height: 1.25;
+      }
+
+      .automate .sub {
+        font-size: 13rem;
+        margin-top: 8rem;
+      }
+
+      .automate-copy {
+        padding: 24rem 0 0 24rem;
+      }
+
+      .search {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 24rem 18rem;
+        gap: 16rem;
+      }
+
+      .bar-search {
+        width: 100%;
+        height: 58rem;
+        margin-left: 0;
+      }
+    }
+
+    /* ENTRANCE ANIMATION SYSTEM */
+    html.motion-pending .card {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    @media (max-width: 700px) {
+      html.motion-pending .insights,
+      html.motion-pending .search {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    /* ANIMATION KEYFRAMES */
+    @keyframes panel-settle {
+      0% {
+        opacity: 0;
+        transform: translateY(12rem) scale(0.988);
+        clip-path: inset(3% round 22rem);
+      }
+      62% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        clip-path: inset(0 round 22rem);
+      }
+    }
+
+    @keyframes type-unmask {
+      0% {
+        opacity: 0;
+        transform: translateY(16rem);
+        clip-path: inset(0 0 96% 0);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+        clip-path: inset(0 0 0 0);
+      }
+    }
+
+    @keyframes content-rise {
+      0% {
+        opacity: 0;
+        transform: translateY(9rem);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes interface-settle {
+      0% {
+        opacity: 0;
+        transform: translateY(16rem) scale(0.975);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes detail-settle {
+      0% {
+        opacity: 0;
+        transform: translateY(8rem) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes toast-arrive {
+      0% {
+        opacity: 0;
+        transform: translateY(10rem) scale(0.982);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes chip-row-arrive {
+      0% {
+        opacity: 0;
+        transform: translateY(11rem);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes chart-unmask {
+      0% {
+        opacity: 0;
+        transform: translateY(10rem);
+        clip-path: inset(100% 0 0 0);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+        clip-path: inset(0 0 0 0);
+      }
+    }
+
+    @keyframes search-resolve {
+      0% {
+        opacity: 0;
+        transform: translateX(12rem) scale(0.975, 1);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0) scale(1, 1);
+      }
+    }
+
+    /* ENTRANCE RUN CLASSES */
+    html.entrance-run .card {
+      will-change: opacity, transform, clip-path;
+      animation-fill-mode: backwards;
+    }
+
+    html.entrance-run .automate {
+      animation: panel-settle 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.04s backwards;
+    }
+    html.entrance-run .notif {
+      animation: panel-settle 0.66s cubic-bezier(0.16, 1, 0.3, 1) 0.10s backwards;
+    }
+    html.entrance-run .insights {
+      animation: panel-settle 0.74s cubic-bezier(0.16, 1, 0.3, 1) 0.14s backwards;
+    }
+    html.entrance-run .connect {
+      animation: panel-settle 0.74s cubic-bezier(0.16, 1, 0.3, 1) 0.20s backwards;
+    }
+    html.entrance-run .search {
+      animation: panel-settle 0.68s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards;
+    }
+
+    html.entrance-run .automate h2 {
+      animation: type-unmask 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.20s backwards;
+    }
+    html.entrance-run .automate .sub {
+      animation: content-rise 0.54s cubic-bezier(0.16, 1, 0.3, 1) 0.48s backwards;
+    }
+
+    html.entrance-run .win-back {
+      animation: interface-settle 0.84s cubic-bezier(0.16, 1, 0.3, 1) 0.42s backwards;
+    }
+    html.entrance-run .win-front {
+      animation: interface-settle 0.94s cubic-bezier(0.16, 1, 0.3, 1) 0.50s backwards;
+    }
+    html.entrance-run .pill-ai {
+      animation: detail-settle 0.60s cubic-bezier(0.16, 1, 0.3, 1) 0.72s backwards;
+    }
+    html.entrance-run .pill-wf {
+      animation: detail-settle 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.78s backwards;
+    }
+    html.entrance-run .cursor {
+      animation: detail-settle 0.54s cubic-bezier(0.16, 1, 0.3, 1) 0.96s backwards;
+    }
+
+    html.entrance-run .toast-wrap {
+      animation: toast-arrive 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.38s backwards;
+    }
+
+    html.entrance-run .connect h2 {
+      animation: type-unmask 0.64s cubic-bezier(0.22, 1, 0.36, 1) 0.54s backwards;
+    }
+    html.entrance-run .connect .sub {
+      animation: content-rise 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.73s backwards;
+    }
+
+    html.entrance-run .chip-row.r1 {
+      animation: chip-row-arrive 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.86s backwards;
+    }
+    html.entrance-run .chip-row.r2 {
+      animation: chip-row-arrive 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.91s backwards;
+    }
+    html.entrance-run .chip-row.r3 {
+      animation: chip-row-arrive 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.96s backwards;
+    }
+    html.entrance-run .chip-slack {
+      animation: detail-settle 0.58s cubic-bezier(0.16, 1, 0.3, 1) 1.02s backwards;
+    }
+
+    html.entrance-run .insights .tag {
+      animation: content-rise 0.46s cubic-bezier(0.16, 1, 0.3, 1) 0.44s backwards;
+    }
+    html.entrance-run .insights h2 {
+      animation: type-unmask 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.56s backwards;
+    }
+    html.entrance-run .insights .sub {
+      animation: content-rise 0.44s cubic-bezier(0.16, 1, 0.3, 1) 0.75s backwards;
+    }
+    html.entrance-run .chart {
+      animation: chart-unmask 0.86s cubic-bezier(0.16, 1, 0.3, 1) 0.72s backwards;
+    }
+
+    html.entrance-run .search h2 {
+      animation: type-unmask 0.56s cubic-bezier(0.22, 1, 0.36, 1) 0.72s backwards;
+    }
+    html.entrance-run .bar-search {
+      transform-origin: right center;
+      animation: search-resolve 0.70s cubic-bezier(0.16, 1, 0.3, 1) 0.88s backwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      html.motion-pending .card {
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="stage" role="main" aria-label="Product feature overview">
+    
+    <!-- CARD 1: NOTIFICATION -->
+    <section class="card notif" aria-label="Automation notification">
+      <div class="toast-wrap">
+        <div class="toast-ledge"></div>
+        <div class="toast">
+          <!-- Sparkle icon SVG: black circle with white 4-point star -->
+          <svg class="toast-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="12" fill="#0d0d0d"/>
+            <path d="M12 4.5 C12 8.5 8.5 12 4.5 12 C8.5 12 12 15.5 12 19.5 C12 15.5 15.5 12 19.5 12 C15.5 12 12 8.5 12 4.5 Z" fill="#ffffff"/>
+          </svg>
+          <div class="toast-center">
+            <h3 class="toast-title">Automation completed!</h3>
+            <p class="toast-sub">Weekly client report sent automatically</p>
+          </div>
+          <span class="toast-time">2:34 PM</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 2: CONNECT YOUR TOOLS -->
+    <section class="card connect" aria-label="Integrations">
+      <h2>Connect your<br>Tools Now.</h2>
+      <p class="sub">120+ integrations available</p>
+
+      <!-- Floating Slack Chip -->
+      <div class="chip chip-slack">
+        <span>Slack</span>
+        <svg viewBox="0 0 122.8 122.8">
+          <path d="M25.8 77.6c0 7.1-5.8 12.9-12.9 12.9S0 84.7 0 77.6s5.8-12.9 12.9-12.9h12.9v12.9zm6.5 0c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9v32.3c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V77.6z" fill="#E01E5A"/>
+          <path d="M45.2 25.8c-7.1 0-12.9-5.8-12.9-12.9S38.1 0 45.2 0s12.9 5.8 12.9 12.9v12.9H45.2zm0 6.5c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H12.9C5.8 58.1 0 52.3 0 45.2s5.8-12.9 12.9-12.9h32.3z" fill="#36C5F0"/>
+          <path d="M97 45.2c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9-5.8 12.9-12.9 12.9H97V45.2zm-6.5 0c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V12.9C77.6 5.8 83.4 0 90.5 0s12.9 5.8 12.9 12.9v32.3z" fill="#2EB67D"/>
+          <path d="M77.6 97c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9-12.9-5.8-12.9-12.9V97h12.9zm0-6.5c-7.1 0-12.9-5.8-12.9-12.9s5.8-12.9 12.9-12.9h32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H77.6z" fill="#ECB22E"/>
+        </svg>
+      </div>
+
+      <!-- Chips Container -->
+      <div class="chips-container">
+        <!-- Row 1 -->
+        <div class="chip-row r1">
+          <div class="chip">
+            <span>Microsoft Teams</span>
+            <svg viewBox="0 0 24 24">
+              <path d="M19.5 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm-3 2h6a1.5 1.5 0 0 1 1.5 1.5v4.5a3 3 0 0 1-3 3h-4.5V9.5z" fill="#5059C9"/>
+              <circle cx="9" cy="5" r="3.5" fill="#7B83EB"/>
+              <path d="M14.5 10H3.5A2.5 2.5 0 0 0 1 12.5v7A2.5 2.5 0 0 0 3.5 22h11a2.5 2.5 0 0 0 2.5-2.5v-7a2.5 2.5 0 0 0-2.5-2.5z" fill="#4B53BC"/>
+              <path d="M6 14h6v2H9.8v4.5H7.8V16H6v-2z" fill="#ffffff"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="chip-row r2">
+          <div class="chip">
+            <span>Notion</span>
+            <svg viewBox="0 0 24 24">
+              <path fill="#0d0d0d" d="M4.459 4.208c.746.606 1.026.56 2.428.466l11.43-.699c.746-.046 1.026-.513.746-1.166L18.156.897C17.783.337 17.037.01 16.337.057L3.106.897c-.7.047-.98.374-.747.933l2.1 2.378zm.886 3.498v13.626c0 .933.513 1.493 1.493 1.446l12.456-.746c.98-.047 1.26-.84 1.26-1.773V7.24c0-.793-.42-1.26-1.213-1.213l-12.783.746c-.793.047-1.213.42-1.213.933zm11.942 1.307l.14 10.313c0 .56-.373.746-.84.746-.373 0-.653-.186-.886-.56l-5.69-8.494v8.26c.466.094.746.374.746.747 0 .42-.326.653-.933.653l-2.426.14c-.467 0-.7-.28-.7-.653 0-.42.327-.653.84-.747l.14-8.773c0-.606.326-.886.886-.886.513 0 .886.28 1.166.7l5.69 8.448v-7.84c-.466-.093-.746-.373-.746-.746 0-.42.327-.653.933-.653l2.426-.14c.513 0 .746.28.746.746z"/>
+            </svg>
+          </div>
+          <div class="chip">
+            <span>GitHub</span>
+            <svg viewBox="0 0 24 24">
+              <path fill="#0d0d0d" fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="chip-row r3">
+          <div class="chip">
+            <span>Google Drive</span>
+            <svg viewBox="0 0 87.3 78">
+              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </svg>
+          </div>
+          <div class="chip">
+            <span>Figma</span>
+            <svg viewBox="0 0 38 57">
+              <path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1abcfe"/>
+              <path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0acf83"/>
+              <path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#ff7262"/>
+              <path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#f24e1e"/>
+              <path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#a259ff"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 3: AUTOMATE YOUR WORK -->
+    <section class="card automate" aria-label="Automate your work">
+      <div class="automate-copy">
+        <h2><span class="g">Automate</span> your work.<br>Focus on what matters.</h2>
+        <p class="sub">AI-powered workflows that save teams hours every week.</p>
+      </div>
+
+      <!-- Illustration Layer -->
+      <div class="illo">
+        <!-- Back Window -->
+        <div class="win win-back">
+          <div class="win-bar">
+            <div class="traffic-dot"></div>
+            <div class="traffic-dot"></div>
+            <div class="traffic-dot"></div>
+          </div>
+          <div class="win-back-body">
+            <div class="win-back-strip"></div>
+          </div>
+        </div>
+
+        <!-- Front Window -->
+        <div class="win win-front">
+          <div class="win-bar">
+            <div class="traffic-dot"></div>
+            <div class="traffic-dot"></div>
+            <div class="traffic-dot"></div>
+          </div>
+          <div class="win-front-body">
+            <div class="win-front-strip"></div>
+          </div>
+        </div>
+
+        <!-- Workflow Automated Pill -->
+        <div class="pill-wf">
+          <div class="tick-disc">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1.5 4.5L4 7L9.5 1.5" stroke="#161616" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Workflow Automated</span>
+        </div>
+
+        <!-- AI Sparkle Card -->
+        <div class="pill-ai">
+          <svg width="23" height="23" viewBox="0 0 23 23" fill="none">
+            <!-- Dual 4-point sparkle: small tip & large tip -->
+            <path d="M5.5 1C5.5 3 4 4.5 2 4.5C4 4.5 5.5 6 5.5 8C5.5 6 7 4.5 9 4.5C7 4.5 5.5 3 5.5 1Z" fill="#eff4e6" stroke="#4f7433" stroke-width="2.2"/>
+            <path d="M14.5 5C14.5 9.5 11 13 6.5 13C11 13 14.5 16.5 14.5 21C14.5 16.5 18 13 22.5 13C18 13 14.5 9.5 14.5 5Z" fill="#eff4e6" stroke="#4f7433" stroke-width="2.25"/>
+          </svg>
+          <div class="ai-skeleton">
+            <div class="ai-line-1"></div>
+            <div class="ai-line-2"></div>
+          </div>
+        </div>
+
+        <!-- Classic Cursor Pointer -->
+        <svg class="cursor" viewBox="0 0 24 28">
+          <path d="M2 2 L9.5 24 L13.5 16 L21 13.5 Z" fill="#ffffff" stroke="#2b2b2b" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- CARD 4: PRODUCTIVITY INSIGHTS -->
+    <section class="card insights" aria-label="Productivity insights">
+      <div class="tag">Productivity Insights</div>
+      <h2>48 hours</h2>
+      <p class="sub">saved this week!</p>
+
+      <div class="chart" aria-label="Hours saved per day: Monday 2, Tuesday 6, Wednesday 12, Thursday 20, Friday 31, Saturday 40, Sunday 48">
+        <!-- MON -->
+        <div class="bar-col">
+          <div class="bar" style="height: 43.2rem;">2h</div>
+          <span class="day-lbl">MON</span>
+        </div>
+        <!-- TUE -->
+        <div class="bar-col">
+          <div class="bar" style="height: 80.9rem;">6h</div>
+          <span class="day-lbl">TUE</span>
+        </div>
+        <!-- WED -->
+        <div class="bar-col">
+          <div class="bar" style="height: 131.7rem;">12h</div>
+          <span class="day-lbl">WED</span>
+        </div>
+        <!-- THU -->
+        <div class="bar-col">
+          <div class="bar" style="height: 165.5rem;">20h</div>
+          <span class="day-lbl">THU</span>
+        </div>
+        <!-- FRI -->
+        <div class="bar-col">
+          <div class="bar" style="height: 203.2rem;">31h</div>
+          <span class="day-lbl">FRI</span>
+        </div>
+        <!-- SAT -->
+        <div class="bar-col">
+          <div class="bar" style="height: 235.2rem;">40h</div>
+          <span class="day-lbl">SAT</span>
+        </div>
+        <!-- SUN -->
+        <div class="bar-col">
+          <div class="bar bar-sun" style="height: 265rem;">48h</div>
+          <span class="day-lbl">SUN</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 5: SEARCH -->
+    <section class="card search" aria-label="Search">
+      <h2>Find anything<br>instantly</h2>
+      <div class="bar-search">
+        <div class="mag-circle">
+          <!-- Magnifying glass SVG -->
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <circle cx="8.5" cy="8.5" r="7.1" stroke="#121212" stroke-width="2.2"/>
+            <line x1="13.8" y1="13.8" x2="18.5" y2="18.5" stroke="#121212" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="search-input-placeholder">Search tasks, docs, workflows...</span>
+        <!-- Mic SVG: capsule + U-arc + stem + base -->
+        <svg class="mic-icon" viewBox="0 0 16 20" fill="none">
+          <rect x="5" y="1" width="6" height="10" rx="3" fill="#141414"/>
+          <path d="M2.5 7.5v2a5.5 5.5 0 0 0 11 0v-2" stroke="#141414" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="8" y1="15" x2="8" y2="18.5" stroke="#141414" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="4.5" y1="18.5" x2="11.5" y2="18.5" stroke="#141414" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ENTRANCE SCRIPT -->
+  <script>
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.__entrancePlayed) {
+        if (window.__motionFailSafe) clearTimeout(window.__motionFailSafe);
+        document.documentElement.classList.remove('motion-pending', 'entrance-run');
+        return;
+      }
+      window.__entrancePlayed = true;
+      var fontDeadline = new Promise(function(resolve) { setTimeout(resolve, 700); });
+      var fontReady = document.fonts ? document.fonts.ready : Promise.resolve();
+      Promise.race([fontReady, fontDeadline]).then(function() {
+        if (window.__motionFailSafe) clearTimeout(window.__motionFailSafe);
+        document.documentElement.classList.remove('motion-pending');
+        document.documentElement.classList.add('entrance-run');
+        setTimeout(function() {
+          document.documentElement.classList.remove('entrance-run');
+        }, 1850);
+      });
+    })();
+  </script>
+
+</body>
+</html>
