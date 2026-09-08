@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: { rank: 'asc' },
       });
-    } catch (dbErr) {
-      console.warn('[API /api/opportunities GET] DB query fallback:', dbErr);
+    } catch (dbErr: any) {
+      console.warn('[API /api/opportunities GET] DB query warning:', dbErr?.message);
       records = [];
     }
 
@@ -41,19 +41,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/opportunities (Admin CRUD)
+// POST /api/opportunities (Admin Live CRUD)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    if (!body.name || !body.grossPricePaise) {
+    if (!body.name || body.grossPricePaise === undefined) {
       return NextResponse.json(
         { error: 'Opportunity name and grossPricePaise are required.' },
         { status: 400 },
       );
     }
 
-    const gross = Number(body.grossPricePaise) || 0;
+    const gross = Math.round(Number(body.grossPricePaise) || 0);
     const deductions = body.deductions || {
       transportPaise: 0,
       loadingPaise: 2000,
@@ -62,31 +62,42 @@ export async function POST(request: NextRequest) {
       commissionPaise: 0,
       transitLossPaise: 1500,
     };
-    const totalDeductions =
+    const totalDeductions = Math.round(
       (Number(deductions.transportPaise) || 0) +
       (Number(deductions.loadingPaise) || 0) +
       (Number(deductions.weighingPaise) || 0) +
       (Number(deductions.mandiFeePaise) || 0) +
       (Number(deductions.commissionPaise) || 0) +
-      (Number(deductions.transitLossPaise) || 0);
+      (Number(deductions.transitLossPaise) || 0)
+    );
 
     const nrp = gross - totalDeductions;
     const count = await prisma.opportunityRecord.count().catch(() => 0);
 
     const created = await prisma.opportunityRecord.create({
       data: {
-        rank: count + 1,
-        name: body.name,
+        id: body.id && String(body.id).trim() ? String(body.id).trim() : undefined,
+        rank: body.rank !== undefined ? Math.round(Number(body.rank)) : count + 1,
+        name: String(body.name),
         channelType: body.channelType || 'DIRECT_BUYER',
         buyerType: body.buyerType || 'Agri Processor',
         location: body.location || 'Pune Cluster',
         distanceKm: Number(body.distanceKm) || 30,
         providesPickup: Boolean(body.providesPickup),
         grossPricePaise: gross,
-        nrpPaise: nrp,
-        totalRealizedPaise: nrp * 18,
-        totalDeductionsPaise: totalDeductions,
-        netMarginOverBaselinePaise: nrp - 262200,
+        nrpPaise: body.nrpPaise !== undefined ? Math.round(Number(body.nrpPaise)) : nrp,
+        totalRealizedPaise:
+          body.totalRealizedPaise !== undefined
+            ? Math.round(Number(body.totalRealizedPaise))
+            : nrp * 18,
+        totalDeductionsPaise:
+          body.totalDeductionsPaise !== undefined
+            ? Math.round(Number(body.totalDeductionsPaise))
+            : totalDeductions,
+        netMarginOverBaselinePaise:
+          body.netMarginOverBaselinePaise !== undefined
+            ? Math.round(Number(body.netMarginOverBaselinePaise))
+            : nrp - 262200,
         trustScore: Number(body.trustScore) || 0.9,
         paymentReliability: Number(body.paymentReliability) || 0.95,
         verificationLevel: body.verificationLevel || 'PLATFORM_VERIFIED',
@@ -104,7 +115,7 @@ export async function POST(request: NextRequest) {
   } catch (err: any) {
     console.error('[API /api/opportunities POST] Error:', err);
     return NextResponse.json(
-      { error: err?.message || 'Failed to create opportunity' },
+      { error: err?.message || 'Failed to create opportunity in database' },
       { status: 500 },
     );
   }
