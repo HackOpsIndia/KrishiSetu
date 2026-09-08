@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '../../../components/navigation/AppShell';
 import {
   AlertTriangle,
@@ -38,6 +38,93 @@ export default function AdminGrievancesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<GrievanceTicket | null>(null);
   const [tickets, setTickets] = useState<GrievanceTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Seed realistic demo grievance data on mount
+  useEffect(() => {
+    const seedGrievances: GrievanceTicket[] = [
+      {
+        id: 'GRV-2024-001',
+        raisedBy: 'FARMER',
+        farmerName: 'Ramesh Kumar',
+        buyerName: 'FreshMart Foods',
+        category: 'WEIGHT_DISCREPANCY',
+        title: 'Weighbridge discrepancy: 2.3 qtl shortage on Wheat delivery',
+        lotId: 'LOT-0042',
+        disputedAmount: 5764,
+        status: 'OPEN',
+        createdAt: '2024-12-18',
+        description:
+          'Farmer recorded 24.5 qtl at origin weighbridge but buyer claims 22.2 qtl at destination. Electronic weighbridge log attached. Requesting escrow hold and re-inspection.',
+      },
+      {
+        id: 'GRV-2024-002',
+        raisedBy: 'FARMER',
+        farmerName: 'Sita Devi',
+        buyerName: 'AgriPro Industries',
+        category: 'QUALITY_DOWNGRADE',
+        title: 'AI-graded A-grade Rice downgraded to B by buyer',
+        lotId: 'LOT-0087',
+        disputedAmount: 6000,
+        status: 'UNDER_REVIEW',
+        createdAt: '2024-12-17',
+        description:
+          'Platform AI quality engine graded lot as Grade-A (moisture 12.8%, FN 315). Buyer re-graded as B citing higher broken grain %. Photo evidence and AI report attached for conciliation.',
+      },
+      {
+        id: 'GRV-2024-003',
+        raisedBy: 'BUYER',
+        farmerName: 'Manoj Patel',
+        buyerName: 'Metro Wholesale',
+        category: 'PAYMENT_DELAY',
+        title: 'Payment released but not received in farmer UPI account',
+        lotId: 'LOT-0063',
+        disputedAmount: 0,
+        status: 'RESOLVED',
+        createdAt: '2024-12-15',
+        description:
+          'Buyer released payment via escrow, but farmer reports UPI credit not received after 48 hours. Bank reconciliation confirmed delay due to NPCI settlement queue.',
+        resolutionNote:
+          'Payment confirmed credited after NPCI settlement cycle. Verified via bank statement upload. Case closed with no further action required.',
+      },
+      {
+        id: 'GRV-2024-004',
+        raisedBy: 'FARMER',
+        farmerName: 'Gita Sharma',
+        buyerName: 'Organic Valley Co.',
+        category: 'LOGISTICS_DAMAGE',
+        title: 'Mustard consignment damaged during transit — wet tarpaulin',
+        lotId: 'LOT-0101',
+        disputedAmount: 0,
+        status: 'OPEN',
+        createdAt: '2024-12-19',
+        description:
+          'Farmer alleges that 3.5 qtl mustard was damaged due to rain exposure during transit. Logistics partner used insufficient tarpaulin cover. Photo evidence of wet gunny bags attached.',
+      },
+      {
+        id: 'GRV-2024-005',
+        raisedBy: 'BUYER',
+        farmerName: 'Vikram Singh',
+        buyerName: 'Spice Hub Exports',
+        category: 'QUALITY_DOWNGRADE',
+        title: 'Turmeric curcumin content below agreed specification',
+        lotId: 'LOT-0122',
+        disputedAmount: 0,
+        status: 'RESOLVED',
+        createdAt: '2024-12-10',
+        description:
+          'Buyer lab test shows curcumin at 2.8% vs agreed 3.5% minimum. AI grading was based on visual assessment only. Requesting partial refund from escrow.',
+        resolutionNote:
+          'Mutually conciliated 50/50 settlement. ₹4,200 released to buyer, remaining escrow released to farmer. Both parties accepted digital lab report.',
+      },
+    ];
+    // Simulate API fetch delay
+    const timer = setTimeout(() => {
+      setTickets(seedGrievances);
+      setIsLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredTickets = tickets.filter((t) => {
     if (filter !== 'ALL' && t.status !== filter) return false;
@@ -66,6 +153,15 @@ export default function AdminGrievancesPage() {
     }
   };
 
+  // Dynamic KPI calculations
+  const openCount = tickets.filter((t) => t.status === 'OPEN').length;
+  const reviewCount = tickets.filter((t) => t.status === 'UNDER_REVIEW').length;
+  const resolvedCount = tickets.filter((t) => t.status === 'RESOLVED').length;
+  const totalDisputed = tickets
+    .filter((t) => t.status !== 'RESOLVED')
+    .reduce((sum, t) => sum + t.disputedAmount, 0);
+  const resolutionRate = tickets.length > 0 ? ((resolvedCount / tickets.length) * 100).toFixed(1) : '0.0';
+
   return (
     <AppShell
       badge="Farmer Protection &amp; Dispute Mediation"
@@ -80,17 +176,17 @@ export default function AdminGrievancesPage() {
               Active Grievances
             </span>
             <span className="text-2xl sm:text-3xl font-extrabold font-instrument text-[#ef4d23] block">
-              2 Open
+              {openCount} Open
             </span>
-            <span className="text-xs text-neutral-500 mt-1 block">1 Under Active Review</span>
+            <span className="text-xs text-neutral-500 mt-1 block">{reviewCount} Under Active Review</span>
           </div>
 
           <div className="bg-white rounded-3xl p-5 border border-neutral-200 shadow-xs">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 block mb-1">
-              24h Resolution Rate
+              Resolution Rate
             </span>
             <span className="text-2xl sm:text-3xl font-extrabold font-instrument text-emerald-800 block">
-              94.6%
+              {resolutionRate}%
             </span>
             <span className="text-xs text-neutral-500 mt-1 block">Within statutory SLA</span>
           </div>
@@ -110,7 +206,7 @@ export default function AdminGrievancesPage() {
               Escrow Disputed Sum
             </span>
             <span className="text-2xl sm:text-3xl font-extrabold font-instrument text-neutral-900 block">
-              {formatCurrency(11764)}
+              {formatCurrency(totalDisputed)}
             </span>
             <span className="text-xs text-amber-700 font-medium mt-1 block">Safe in escrow hold</span>
           </div>
@@ -153,7 +249,24 @@ export default function AdminGrievancesPage() {
 
         {/* GRIEVANCE LIST */}
         <div className="space-y-4">
-          {filteredTickets.map((ticket) => (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-xs animate-pulse">
+                  <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3" />
+                  <div className="h-3 bg-neutral-100 rounded w-2/3 mb-2" />
+                  <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 border border-neutral-200 shadow-xs text-center">
+              <AlertTriangle className="w-8 h-8 text-neutral-300 mx-auto mb-3" />
+              <p className="text-sm font-semibold text-neutral-500">No grievances found</p>
+              <p className="text-xs text-neutral-400 mt-1">Try adjusting your filters or search query.</p>
+            </div>
+          ) : (
+          filteredTickets.map((ticket) => (
             <div
               key={ticket.id}
               className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-xs hover:border-neutral-300 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
@@ -200,7 +313,8 @@ export default function AdminGrievancesPage() {
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          ))}
+          ))
+          )}
         </div>
 
         {/* MEDIATION MODAL */}
