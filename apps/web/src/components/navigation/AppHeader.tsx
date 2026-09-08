@@ -62,30 +62,34 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#ededed]/90 backdrop-blur-md border-b border-neutral-200/80 px-3 sm:px-6 py-2.5">
-      {/* Top micro-bar: Environment & Canonical Invariants */}
+      {/* Top micro-bar: Environment & Invariants */}
       <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] text-neutral-500 mb-1.5 pb-1 border-b border-neutral-200/50">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-neutral-800 uppercase tracking-wider">
-            SIH26132 Demo Environment • Team HackOps
+            {isDemoMode ? 'SIH26132 Demo Environment • Team HackOps' : 'KrishiSetu Production • Team HackOps'}
           </span>
           <span className="text-neutral-400">•</span>
           <span className="hidden sm:inline text-neutral-600">
-            Canonical Scenario: Ramesh Kumar • 18 Qtl Tomato (Hybrid A)
+            {isDemoMode
+              ? 'Canonical Scenario: Ramesh Kumar • 18 Qtl Tomato (Hybrid A)'
+              : 'Market-Decision & Transaction Intelligence Platform'}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={resetDemo}
-            disabled={isResetting}
-            className="flex items-center gap-1 text-neutral-600 hover:text-neutral-900 font-medium px-2 py-0.5 rounded border border-neutral-300 hover:bg-white transition-colors"
-          >
-            <RotateCcw className={`w-3 h-3 ${isResetting ? 'animate-spin' : ''}`} />
-            <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
-          </button>
-        </div>
+        {isDemoMode && (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={resetDemo}
+              disabled={isResetting}
+              className="flex items-center gap-1 text-neutral-600 hover:text-neutral-900 font-medium px-2 py-0.5 rounded border border-neutral-300 hover:bg-white transition-colors"
+            >
+              <RotateCcw className={`w-3 h-3 ${isResetting ? 'animate-spin' : ''}`} />
+              <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main floating pill navbar */}

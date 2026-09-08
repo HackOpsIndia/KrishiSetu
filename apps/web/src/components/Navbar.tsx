@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { SproutIcon, RefreshCwIcon, ShieldCheckIcon } from './icons';
+import { useIsDemoMode } from '../lib/env';
 
 interface NavbarProps {
   currentRole: 'FARMER' | 'FPO' | 'BUYER';
@@ -11,6 +12,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentRole, onRoleChange, onResetDemo, isResetting }: NavbarProps) {
+  const isDemoMode = useIsDemoMode();
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-krishi-dark/80 backdrop-blur-md">
       {/* Top Ticker: Live Mandi Rates */}
@@ -89,16 +91,18 @@ export function Navbar({ currentRole, onRoleChange, onResetDemo, isResetting }: 
             </button>
           </div>
 
-          {/* Reset Demo State Button */}
-          <button
-            onClick={onResetDemo}
-            disabled={isResetting}
-            title="Reset to canonical demo scenario (18 qtl Tomato Hybrid in Dehu Road)"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-medium transition-colors"
-          >
-            <RefreshCwIcon className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin text-emerald-400' : ''}`} />
-            <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
-          </button>
+          {/* Reset Demo State Button (Demo environments only) */}
+          {isDemoMode && onResetDemo && (
+            <button
+              onClick={onResetDemo}
+              disabled={isResetting}
+              title="Reset to canonical demo scenario (18 qtl Tomato Hybrid in Dehu Road)"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-medium transition-colors"
+            >
+              <RefreshCwIcon className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin text-emerald-400' : ''}`} />
+              <span>{isResetting ? 'Resetting...' : 'Reset Demo'}</span>
+            </button>
+          )}
 
           {/* Farmer Status Pill */}
           <div className="flex items-center gap-2 pl-2 border-l border-white/10">

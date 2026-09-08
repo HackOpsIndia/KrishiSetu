@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useIsDemoMode } from '../lib/env';
 
 const VIDEO_URL =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4';
@@ -20,6 +21,7 @@ export const CinematicHero: React.FC<CinematicHeroProps> = ({
   onResetDemo,
   isResetting,
 }) => {
+  const isDemoMode = useIsDemoMode();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Custom fade-in / fade-out loop logic using requestAnimationFrame & useRef
@@ -214,8 +216,8 @@ export const CinematicHero: React.FC<CinematicHeroProps> = ({
               </div>
             )}
 
-            {/* Reset Demo Button */}
-            {onResetDemo && (
+            {/* Reset Demo Button (Demo only) */}
+            {isDemoMode && onResetDemo && (
               <button
                 type="button"
                 onClick={onResetDemo}

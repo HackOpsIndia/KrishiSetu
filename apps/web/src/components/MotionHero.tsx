@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Gauge } from './Gauge';
+import { useIsDemoMode } from '../lib/env';
 
 interface MotionHeroProps {
   onExploreClick?: () => void;
@@ -21,6 +22,7 @@ interface MotionHeroProps {
 }
 
 export function MotionHero({ onExploreClick, onResetDemo, isResetting }: MotionHeroProps) {
+  const isDemoMode = useIsDemoMode();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeToggle1, setActiveToggle1] = useState<'net' | 'gross'>('net');
   const [activeToggle3, setActiveToggle3] = useState<'pool' | 'solo'>('pool');
@@ -103,7 +105,7 @@ export function MotionHero({ onExploreClick, onResetDemo, isResetting }: MotionH
 
               {/* Right cluster */}
               <div className="flex items-center gap-2 ml-auto">
-                {onResetDemo && (
+                {isDemoMode && onResetDemo && (
                   <button
                     onClick={onResetDemo}
                     disabled={isResetting}

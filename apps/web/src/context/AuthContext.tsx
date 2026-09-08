@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { isDemoEnvironment } from '../lib/env';
 
 export type UserRole = 'FARMER' | 'BUYER' | 'ADMIN' | 'FPO';
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'DISABLED' | 'PENDING';
@@ -105,10 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(CANONICAL_USERS.FARMER);
   const [token, setToken] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => isDemoEnvironment());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
+    // Sync with environment
+    const envDemo = isDemoEnvironment();
+    setIsDemoMode(envDemo);
+
     if (typeof window !== 'undefined') {
       const savedRole = localStorage.getItem('krishisetu_active_role') as UserRole;
       if (savedRole && CANONICAL_USERS[savedRole]) {
@@ -134,11 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check backend auth config for production vs demo mode
     api.getAuthConfig().then((cfg) => {
       if (cfg && typeof cfg.demoMode === 'boolean') {
-        setIsDemoMode(cfg.demoMode);
+        // Never force demo mode on production domain
+        setIsDemoMode(envDemo ? cfg.demoMode : false);
       }
     }).catch(() => {
-      // Fallback to demo mode if offline
-      setIsDemoMode(true);
+      setIsDemoMode(envDemo);
     });
   }, []);
 
