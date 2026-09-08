@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   X,
@@ -18,6 +19,12 @@ import {
 } from 'lucide-react';
 
 export function AuthModal() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     isAuthModalOpen,
     closeAuthModal,
@@ -56,7 +63,7 @@ export function AuthModal() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  if (!isAuthModalOpen) return null;
+  if (!isAuthModalOpen || !mounted) return null;
 
   const handleOtpChange = (index: number, val: string) => {
     if (!/^\d*$/.test(val)) return;
@@ -223,9 +230,9 @@ export function AuthModal() {
     setOtp(digits);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="relative w-full max-w-md my-auto bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header bar */}
         <div className="p-6 pb-4 bg-gradient-to-b from-neutral-50 to-white border-b border-neutral-100 flex items-start justify-between">
           <div>
@@ -696,6 +703,7 @@ export function AuthModal() {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

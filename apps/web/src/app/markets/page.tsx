@@ -8,6 +8,7 @@ import { NRPBreakdownModal } from '../../components/NRPBreakdownModal';
 import { NegotiationModal } from '../../components/NegotiationModal';
 import { AggregationModal } from '../../components/AggregationModal';
 import { Search, Filter, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 // Exact Canonical Ranked Opportunities from backend /api/opportunities/demo-lot-ramesh-18qtl
 const CANONICAL_MARKETS_DATA: OpportunityItem[] = [
@@ -256,6 +257,7 @@ const CANONICAL_MARKETS_DATA: OpportunityItem[] = [
 ];
 
 export default function MarketsPage() {
+  const { user, isDemoMode, isAuthenticated } = useAuth();
   const [search, setSearch] = useState('');
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterVerified, setFilterVerified] = useState(false);
@@ -264,6 +266,12 @@ export default function MarketsPage() {
   const [showAggregationModal, setShowAggregationModal] = useState(false);
 
   const quantityQtl = 18;
+
+  const marketsSubtitle = isDemoMode
+    ? 'Full opportunity ranking for Ramesh Kumar (18 Qtl Tomato Hybrid). Displayed price ≠ actual in-hand net realization.'
+    : isAuthenticated && user?.name
+    ? `Full opportunity ranking for ${user.name}. Displayed price = actual in-hand net realization.`
+    : 'Real-time transparent market opportunities across Maharashtra. Displayed price = actual in-hand net realization after transport & deductions.';
 
   // Filter opportunities
   const filtered = CANONICAL_MARKETS_DATA.filter((item) => {
@@ -279,7 +287,7 @@ export default function MarketsPage() {
     <AppShell
       badge="Market Discovery &amp; Ranking"
       title="Markets &amp; Verified Buyers"
-      subtitle="Full opportunity ranking for Ramesh Kumar (18 Qtl Tomato Hybrid). Displayed price ≠ actual in-hand net realization."
+      subtitle={marketsSubtitle}
       actions={
         <Link
           href="/fpo"
