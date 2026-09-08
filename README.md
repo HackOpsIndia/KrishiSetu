@@ -36,6 +36,53 @@ Indian farmers often travel to distant APMC mandis attracted by higher advertise
 
 ---
 
+## 🔄 How the Website Works (End-to-End Flow)
+
+> 📖 **Comprehensive Deep Dive:** For a full, multi-screen walkthrough with failure-mode defenses and API mechanics, read [`docs/README.md`](docs/README.md).
+
+```mermaid
+flowchart TD
+    A[1. Visitor on Landing Page] --> B{Sign In / Register}
+    
+    B -->|Option 1: Email OTP| C1[6-Digit Code via Gmail SMTP]
+    B -->|Option 2: Google OAuth| C2[Google Web Client Verification]
+    B -->|Option 3: Password| C3[Bcrypt + JWT Stateless Token]
+    
+    C1 & C2 & C3 --> D[Authenticated Session with RBAC Role]
+    
+    D --> E[2. Farmer Creates Harvest Lot on /lots]
+    E --> F[Status: LISTED - 18Q Tomato Grade A]
+    
+    F --> G[3. NRP Engine Evaluates 7 Channels in Real Time]
+    G --> H{Farmer Chooses Selling Path}
+    
+    H -->|Path A: Direct Corporate| I[Rank #1: FreshMart Foods - 12 km]
+    I --> J[Gross: ₹3,100 -> Net Realised: ₹2,925.20/qtl]
+    J --> K[Contract Created: Buyer Locks 100% into Escrow]
+    
+    H -->|Path B: Bulk MOQ Contract| L[AgriFresh requires 50Q MOQ - Individually Ineligible]
+    L --> M[Join FPO Collective Logistics Pool on /fpo]
+    M --> N[Cluster 3 Farmers: Ramesh 18Q + Suresh 20Q + Ganesh 30Q = 68Q]
+    N --> O[50Q MOQ Unlocked! Freight reduced by 38%]
+    O --> K
+    
+    K --> P[4. Milestone 1: 20% released on verified truck dispatch]
+    P --> Q[5. Milestone 2: 60% released on warehouse weighbridge verification]
+    Q --> R[6. Milestone 3: 20% released on digital QC approval]
+    R --> S[7. Settled! ₹52,653.60 transferred directly to Farmer]
+```
+
+### Detailed Operational Steps:
+1. **Discovery & Exploration (`/`):** Visitors explore market trends and the 18Q Tomato scenario live on the MotionSites cinematic landing page with interactive gross vs net sliders.
+2. **Inclusive Authentication (`AuthModal`):** Farmers authenticate passwordlessly with 6-digit Email OTP (via Gmail SMTP), corporate buyers via Google OAuth 2.0, or admins via encrypted passwords. The dialog is rendered via React Portals (`createPortal`) to prevent window clipping.
+3. **Harvest Listing (`/lots`):** Farmers record harvest volume (18 Quintals), variety (Hybrid Tomato), harvest date, and Grade A quality parameters.
+4. **Real-Time Decision Intelligence (`/markets` & `/dashboard`):** The server-authoritative Net Realised Price (NRP) engine evaluates 7 channels simultaneously, computing freight, cess, loading fees, and temperature-based spoilage decay to recommend FreshMart (+₹2,487.60 profit).
+5. **FPO Harvest Aggregation (`/fpo`):** Smallholder harvests within a 15 km radius are clustered into a unified 68Q pool, meeting AgriFresh's 50Q MOQ and unlocking 38% logistics savings.
+6. **Bilateral Counter-Offers (`/buyer`):** Institutional buyers bid with algorithmic guardrails ($\text{Price}_{\min} = \max(\text{MSP}, \text{Median} - 1.5\sigma)$) preventing predatory pricing.
+7. **3-Stage Milestone Escrow (`/transactions`):** 100% pre-funded payment is locked in Escrow; released in 3 verifiable milestones: 20% on vehicle dispatch, 60% on weighbridge check-in, and 20% on quality acceptance.
+
+---
+
 ## 👥 Team HackOps — Roles & Member Study Guides
 
 Every member of Team HackOps has a comprehensive, beginner-to-advanced study guide with architectural diagrams and hackathon viva defense Q&A.
