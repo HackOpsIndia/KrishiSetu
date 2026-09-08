@@ -15,6 +15,7 @@ dist/
 
 # Turborepo cache
 .turbo/
+*.tsbuildinfo
 
 # Environment variables & secrets (Strictly ignored)
 .env
